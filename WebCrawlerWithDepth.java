@@ -7,7 +7,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebCrawlerWithDepth implements Runnable {
@@ -34,7 +33,7 @@ public class WebCrawlerWithDepth implements Runnable {
     	
    
     	 
-        if ((links.merge(URL, 1, Integer::sum) == 1 )&& (depth < MAX_DEPTH)&&URL != null && URL.length() != 0) {
+        if ((links.size()<5000)&&depth<MAX_DEPTH&&URL != null && URL.length() != 0&&(links.merge(URL, 1, Integer::sum) == 1 )) {
            
             if (URL.contains("/watch?v=")) {
             	 System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
@@ -48,7 +47,7 @@ public class WebCrawlerWithDepth implements Runnable {
                 
                 System.out.println("thread "+Thread.currentThread().getName()+" added 3ady"); 
                 
-                Document document = Jsoup.connect(URL).ignoreContentType(true).get();
+                Document document = Jsoup.connect(URL).ignoreContentType(true).userAgent("Mozilla").get();
                 
                 //.userAgent("Mozilla") for http error fetching url ----- try this
                 //.ignoreContentType(true) for invalid content type
@@ -60,7 +59,6 @@ public class WebCrawlerWithDepth implements Runnable {
               
                 //5. For each extracted URL... go back to Step 4.
                 for (Element page : linksOnPage2) {
-                	
                 	
                 
                 	if((links.merge(page.attr("src"), 1, Integer::sum) == 1 )&&page.attr("src").contains("/embed"))
@@ -92,10 +90,18 @@ public class WebCrawlerWithDepth implements Runnable {
     	
     	Thread t1 = new Thread (new WebCrawlerWithDepth("https://www.youtube.com/")); t1.setName("1");
 		Thread t2 = new Thread (new WebCrawlerWithDepth("https://www.tutorialspoint.com")); t2.setName("2");
-
+		Thread t3 = new Thread (new WebCrawlerWithDepth("https://www.geeksforgeeks.org/")); t3.setName("3");
+		Thread t4 = new Thread (new WebCrawlerWithDepth("https://dzone.com")); t4.setName("4");
+		Thread t5 = new Thread (new WebCrawlerWithDepth("https://www.facebook.com/")); t5.setName("5");
 		t1.start();  t2.start();
+		t3.start();  t4.start();
+		t5.start();
 		t1.join();  
 		t2.join();
+		t3.join();  
+		t4.join();
+		t5.join();  
+	
 	    System.out.println(WebCrawlerWithDepth.links.size());
         
     }
