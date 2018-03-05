@@ -7,33 +7,50 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.function.BiFunction;
 
 public class WebCrawlerWithDepth implements Runnable {
     private static final int MAX_DEPTH = 5;
     //public static HashSet<String> links= new HashSet<>();
-    public static ConcurrentHashMap<String,Integer> links= new ConcurrentHashMap<String,Integer>();
+    public static ConcurrentHashMap<String,Vector<String>> links= new ConcurrentHashMap<String,Vector<String>>();
     private String start_url;
-    public static Object o=new Object();
     boolean to_enter;
     
     @Override
 	public void run() {
 		// TODO Auto-generated method stub
-		getPageLinks(start_url, 0);
+		getPageLinks(start_url, 0,"no parent");
 		
 	}
     public WebCrawlerWithDepth(String start_url) {
     	this.start_url = start_url;
+    	
+    	
         //links = new HashSet<>();
         
     }
+    
+    
 
-    public  void getPageLinks(String URL, int depth) {
+    public  void getPageLinks(String URL, int depth,String parent) {
     	
-   
+    	BiFunction<Vector<String>, Vector<String>, Vector<String>> reMappingFunction = (Vector<String> oldvec, Vector<String> newvec) -> {
+    		Vector<String> temp = new Vector<String>();
+            temp.addAll(oldvec);
+            if(!temp.contains(parent))
+            { 
+      	     temp.add(parent); 
+            }
+            return temp;
+        };
+        
+        Vector<String> initial=new Vector<String>();
+        initial.add(parent);
     	 
-        if ((links.size()<5000)&&depth<MAX_DEPTH&&URL != null && URL.length() != 0&&(links.merge(URL, 1, Integer::sum) == 1 )) {
+        if ((links.size()<5000)&&depth<MAX_DEPTH&&URL != null && URL.length() != 0&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
            
             if (URL.contains("/watch?v=")) {
             	 System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
@@ -60,8 +77,10 @@ public class WebCrawlerWithDepth implements Runnable {
                 //5. For each extracted URL... go back to Step 4.
                 for (Element page : linksOnPage2) {
                 	
+                	Vector<String> initial2=new Vector<String>();
+                    initial2.add(URL);
                 
-                	if((links.merge(page.attr("src"), 1, Integer::sum) == 1 )&&page.attr("src").contains("/embed"))
+                	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed"))
                 	{
                 		
                 		System.out.println("2nd>>"+Thread.currentThread().getName()+">> Depth: " + depth + " [" + page.attr("src") + "]");      
@@ -70,7 +89,7 @@ public class WebCrawlerWithDepth implements Runnable {
                 
                 depth++;
                 for (Element page : linksOnPage) {
-                    getPageLinks(page.attr("abs:href"), depth);
+                    getPageLinks(page.attr("abs:href"), depth,URL);
                 }
                 
              
