@@ -5,12 +5,21 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.omg.CORBA.portable.InputStream;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.io.IOUtils;
+import com.trigonic.jrobotx.RobotExclusion;
 
 public class WebCrawlerWithDepth implements Runnable {
     private static final int MAX_DEPTH = 5;
@@ -34,9 +43,69 @@ public class WebCrawlerWithDepth implements Runnable {
     }
     
     
+    public boolean read_robot(String url){
+    	
+    	URL url_kamel=null;
+    	String base="" ;
+		try {
+			url_kamel = new URL(url);
+			System.out.println("url kamel : "+url_kamel);
+			base = url_kamel.getProtocol() + "://" + url_kamel.getHost();
+			System.out.println("base : "+url_kamel);
 
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	
+    	
+        BufferedReader in;
+		try {
+			URL temp=new URL(base + "/robots.txt");
+			 
+		  	RobotExclusion robotExclusion = new RobotExclusion();
+		    boolean is_allowed=robotExclusion.allows(url_kamel, "*");
+		    System.out.println("is robot allowed "+is_allowed);
+		    return is_allowed; 
+		      
+		       
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			
+			//can't find robot.txt
+			return true;
+		}
+       
+   
+       
+       
+       /*Pattern p = Pattern.compile("^(http(s?)://([^/]+))");
+         Matcher m = p.matcher(url);
+         if (m.find()) {
+             System.out.println(m.group(1));
+         try(BufferedReader in = new BufferedReader(
+                 new InputStreamReader(new URL(m.group(1) + "/robots.txt").openStream()))) {
+             String line = null;
+             while((line = in.readLine()) != null) {
+                 System.out.println(line);
+             }
+         } catch (IOException e) {
+             e.printStackTrace();
+         }
+         }
+         return true;*/
+    }
+   
+    
     public  void getPageLinks(String URL, int depth,String parent) {
     	
+    	System.out.println("links size: \n"+links);
+    	
+    	if(URL != null && URL.length() != 0)
+    	{
+    	boolean is_allowed=read_robot(URL);
+   
     	BiFunction<Vector<String>, Vector<String>, Vector<String>> reMappingFunction = (Vector<String> oldvec, Vector<String> newvec) -> {
     		Vector<String> temp = new Vector<String>();
             temp.addAll(oldvec);
@@ -50,10 +119,10 @@ public class WebCrawlerWithDepth implements Runnable {
         Vector<String> initial=new Vector<String>();
         initial.add(parent);
     	 
-        if ((links.size()<5000)&&depth<MAX_DEPTH&&URL != null && URL.length() != 0&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
+        if (is_allowed&&(links.size()<100)&&depth<MAX_DEPTH&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
            
             if (URL.contains("/watch?v=")) {
-            	 System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
+            	// System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
             	 
             }
             
@@ -83,7 +152,7 @@ public class WebCrawlerWithDepth implements Runnable {
                 	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed"))
                 	{
                 		
-                		System.out.println("2nd>>"+Thread.currentThread().getName()+">> Depth: " + depth + " [" + page.attr("src") + "]");      
+                		//System.out.println("2nd>>"+Thread.currentThread().getName()+">> Depth: " + depth + " [" + page.attr("src") + "]");      
                 	}
                 }
                 
@@ -97,6 +166,8 @@ public class WebCrawlerWithDepth implements Runnable {
                 System.err.println("For '" + URL + "': " + e.getMessage());
             }
         }
+        
+    	}
     }
         
         
