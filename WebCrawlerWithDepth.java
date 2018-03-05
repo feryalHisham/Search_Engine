@@ -1,4 +1,3 @@
-package web_crawler_try;
 
 import org.jsoup.Jsoup;
 
@@ -8,17 +7,16 @@ import org.jsoup.select.Elements;
 import org.omg.CORBA.portable.InputStream;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.function.BiFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.commons.io.IOUtils;
 import com.trigonic.jrobotx.RobotExclusion;
 
 public class WebCrawlerWithDepth implements Runnable {
@@ -27,7 +25,8 @@ public class WebCrawlerWithDepth implements Runnable {
     public static ConcurrentHashMap<String,Vector<String>> links= new ConcurrentHashMap<String,Vector<String>>();
     private String start_url;
     boolean to_enter;
-    
+    static FileWriter  fileWriter;
+    static PrintWriter printWriter;
     @Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -97,10 +96,20 @@ public class WebCrawlerWithDepth implements Runnable {
          return true;*/
     }
    
-    
+    public static void write_links_tofile() {
+    	
+    	for (String key : links.keySet()) {
+    		
+    		for(String value: links.get(key)) {
+    			printWriter.print(key+" VALUE "+value+'\n');
+    		}
+    	}
+    }
     public  void getPageLinks(String URL, int depth,String parent) {
     	
-    	System.out.println("links size: \n"+links);
+    	
+    	
+    	//System.out.println("links size: \n"+links);
     	
     	if(URL != null && URL.length() != 0)
     	{
@@ -119,7 +128,7 @@ public class WebCrawlerWithDepth implements Runnable {
         Vector<String> initial=new Vector<String>();
         initial.add(parent);
     	 
-        if (is_allowed&&(links.size()<100)&&depth<MAX_DEPTH&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
+        if (is_allowed && (links.size()<100)&&depth<MAX_DEPTH&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
            
             if (URL.contains("/watch?v=")) {
             	// System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
@@ -172,16 +181,20 @@ public class WebCrawlerWithDepth implements Runnable {
         
         
    
+    
     public static void main(String[] args) throws InterruptedException {
     	
     	/*WebCrawlerWithDepth x=new WebCrawlerWithDepth();
         x.getPageLinks("https://www.youtube.com/", 0);
         System.out.println(x.links.size());*/
     	
+    	
+		
+    	
     	Thread t1 = new Thread (new WebCrawlerWithDepth("https://www.youtube.com/")); t1.setName("1");
 		Thread t2 = new Thread (new WebCrawlerWithDepth("https://www.tutorialspoint.com")); t2.setName("2");
 		Thread t3 = new Thread (new WebCrawlerWithDepth("https://www.geeksforgeeks.org/")); t3.setName("3");
-		Thread t4 = new Thread (new WebCrawlerWithDepth("https://dzone.com")); t4.setName("4");
+		Thread t4 = new Thread (new WebCrawlerWithDepth("https://stackoverflow.com/")); t4.setName("4");
 		Thread t5 = new Thread (new WebCrawlerWithDepth("https://www.facebook.com/")); t5.setName("5");
 		t1.start();  t2.start();
 		t3.start();  t4.start();
@@ -193,8 +206,21 @@ public class WebCrawlerWithDepth implements Runnable {
 		t5.join();  
 	
 	    System.out.println(WebCrawlerWithDepth.links.size());
-        
+	    try {
+	    	
+	    	 System.out.println("printing in file");
+			fileWriter = new FileWriter("file_links.txt");
+			
+			 printWriter = new PrintWriter(fileWriter);
+			 
+			
+			 write_links_tofile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
+	    printWriter.close();
     }
 
-	
 }
