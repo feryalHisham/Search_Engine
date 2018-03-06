@@ -7,19 +7,28 @@ import org.jsoup.select.Elements;
 import org.omg.CORBA.portable.InputStream;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.io.IOUtils;
 import com.trigonic.jrobotx.RobotExclusion;
+import mpi.*;
 
-public class WebCrawlerWithDepth implements Runnable {
+
+public class WebCrawlerWithDepth implements Runnable,Serializable {
     private static final int MAX_DEPTH = 5;
     //public static HashSet<String> links= new HashSet<>();
     public static ConcurrentHashMap<String,Vector<String>> links= new ConcurrentHashMap<String,Vector<String>>();
@@ -41,6 +50,14 @@ public class WebCrawlerWithDepth implements Runnable {
         
     }
     
+    //i think ya3ny enaha hta5od esm el file bta3 el seed we 3dd el threads elly hn2rah mn el user fel
+    // search_engine class
+    public WebCrawlerWithDepth(String seed_file, int threads_no) {
+    	
+    	
+    	
+    }
+    
     
     public boolean read_robot(String url){
     	
@@ -48,9 +65,9 @@ public class WebCrawlerWithDepth implements Runnable {
     	String base="" ;
 		try {
 			url_kamel = new URL(url);
-			System.out.println("url kamel : "+url_kamel);
+			//System.out.println("url kamel : "+url_kamel);
 			base = url_kamel.getProtocol() + "://" + url_kamel.getHost();
-			System.out.println("base : "+url_kamel);
+			//System.out.println("base : "+url_kamel);
 
 		} catch (MalformedURLException e1) {
 			// TODO Auto-generated catch block
@@ -64,7 +81,7 @@ public class WebCrawlerWithDepth implements Runnable {
 			 
 		  	RobotExclusion robotExclusion = new RobotExclusion();
 		    boolean is_allowed=robotExclusion.allows(url_kamel, "*");
-		    System.out.println("is robot allowed "+is_allowed);
+		    //System.out.println("is robot allowed "+is_allowed);
 		    return is_allowed; 
 		      
 		       
@@ -105,6 +122,50 @@ public class WebCrawlerWithDepth implements Runnable {
     		}
     	}
     }
+    
+    public void send_to_indexer(URL url,Document d)
+    {
+    	
+		//Prepare bytes to send
+    	byte[] yourBytes_url = null;
+		ByteArrayOutputStream bos_url = new ByteArrayOutputStream();
+		ObjectOutput out_url = null;
+		
+		byte[] yourBytes_doc = null;
+		ByteArrayOutputStream bos_doc = new ByteArrayOutputStream();
+		ObjectOutput out_doc = null;
+		try {
+			
+			out_url = new ObjectOutputStream(bos_url);   
+			out_url.writeObject(url);
+			out_url.flush();
+			yourBytes_url = bos_url.toByteArray();
+			//System.out.println(yourBytes_url.length);
+			
+			out_doc = new ObjectOutputStream(bos_doc);   
+			out_doc.writeObject(url);
+			out_doc.flush();
+			yourBytes_doc = bos_doc.toByteArray();
+			//System.out.println(yourBytes_doc.length);
+	      
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+		  try {
+		    bos_url.close();
+		    bos_doc.close();
+		  } catch (IOException ex) {
+		    // ignore close exception
+		  }
+		}
+		
+		
+		MPI.COMM_WORLD.Send(yourBytes_url,0,yourBytes_url.length,MPI.BYTE,1,0);
+		MPI.COMM_WORLD.Send(yourBytes_doc,0,yourBytes_doc.length,MPI.BYTE,1,1);
+
+    }
+    
     public  void getPageLinks(String URL, int depth,String parent) {
     	
     	
@@ -128,8 +189,10 @@ public class WebCrawlerWithDepth implements Runnable {
         Vector<String> initial=new Vector<String>();
         initial.add(parent);
     	 
-        if (is_allowed && (links.size()<100)&&depth<MAX_DEPTH&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
+        if (is_allowed && (links.size()<5000)&&depth<MAX_DEPTH&&(links.merge(URL,initial ,reMappingFunction)).size()==1) {
            
+        	
+        	
             if (URL.contains("/watch?v=")) {
             	// System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
             	 
@@ -144,6 +207,10 @@ public class WebCrawlerWithDepth implements Runnable {
                 
                 Document document = Jsoup.connect(URL).ignoreContentType(true).userAgent("Mozilla").get();
                 
+               System.out.println("sending to indexer");
+               send_to_indexer(new URL(URL),document);
+                
+                
                 //.userAgent("Mozilla") for http error fetching url ----- try this
                 //.ignoreContentType(true) for invalid content type
                 //w check alength aly foa llexception kda msh fkrah brdo
@@ -154,6 +221,8 @@ public class WebCrawlerWithDepth implements Runnable {
               
                 //5. For each extracted URL... go back to Step 4.
                 for (Element page : linksOnPage2) {
+                	
+                	
                 	
                 	Vector<String> initial2=new Vector<String>();
                     initial2.add(URL);
@@ -180,33 +249,31 @@ public class WebCrawlerWithDepth implements Runnable {
     }
         
         
-   
-    
-    public static void main(String[] args) throws InterruptedException {
-    	
-    	/*WebCrawlerWithDepth x=new WebCrawlerWithDepth();
-        x.getPageLinks("https://www.youtube.com/", 0);
-        System.out.println(x.links.size());*/
-    	
-    	
-		
-    	
-    	Thread t1 = new Thread (new WebCrawlerWithDepth("https://www.youtube.com/")); t1.setName("1");
-		Thread t2 = new Thread (new WebCrawlerWithDepth("https://www.tutorialspoint.com")); t2.setName("2");
-		Thread t3 = new Thread (new WebCrawlerWithDepth("https://www.geeksforgeeks.org/")); t3.setName("3");
-		Thread t4 = new Thread (new WebCrawlerWithDepth("https://stackoverflow.com/")); t4.setName("4");
-		Thread t5 = new Thread (new WebCrawlerWithDepth("https://www.facebook.com/")); t5.setName("5");
-		t1.start();  t2.start();
-		t3.start();  t4.start();
+    public void start_crawler() throws InterruptedException
+    {
+		Thread t1 = new Thread(new WebCrawlerWithDepth("https://www.youtube.com/"));
+		t1.setName("1");
+		Thread t2 = new Thread(new WebCrawlerWithDepth("https://www.tutorialspoint.com"));
+		t2.setName("2");
+		Thread t3 = new Thread(new WebCrawlerWithDepth("https://www.geeksforgeeks.org/"));
+		t3.setName("3");
+		Thread t4 = new Thread(new WebCrawlerWithDepth("https://dzone.com"));
+		t4.setName("4");
+		Thread t5 = new Thread(new WebCrawlerWithDepth("https://www.facebook.com/"));
+		t5.setName("5");
+		t1.start();
+		t2.start();
+		t3.start();
+		t4.start();
 		t5.start();
-		t1.join();  
+		t1.join();
 		t2.join();
-		t3.join();  
+		t3.join();
 		t4.join();
-		t5.join();  
-	
-	    System.out.println(WebCrawlerWithDepth.links.size());
-	    try {
+		t5.join();
+
+		System.out.println(WebCrawlerWithDepth.links.size());
+		try {
 	    	
 	    	 System.out.println("printing in file");
 			fileWriter = new FileWriter("file_links.txt");
@@ -220,7 +287,15 @@ public class WebCrawlerWithDepth implements Runnable {
 			e.printStackTrace();
 		}
 	    
+		/*int[] end_of_send= {1};
+		MPI.COMM_WORLD.Send(end_of_send,0,1,MPI.INT,1,1);*/
+		
 	    printWriter.close();
+
+            
     }
+   
+    
+   
 
 }
