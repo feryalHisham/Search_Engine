@@ -1,3 +1,4 @@
+package web_crawler_try;
 
 import org.jsoup.Jsoup;
 
@@ -5,6 +6,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.omg.CORBA.portable.InputStream;
+import org.w3c.dom.Node;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -23,6 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.apache.commons.io.IOUtils;
 import com.trigonic.jrobotx.RobotExclusion;
 import mpi.*;
@@ -36,15 +45,23 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     boolean to_enter;
     static FileWriter  fileWriter;
     static PrintWriter printWriter;
+    static FileWriter  fileWriter_doc;
+    static PrintWriter printWriter_doc;
+    
+    
     @Override
 	public void run() {
 		// TODO Auto-generated method stub
-		getPageLinks(start_url, 0,"no parent");
+		try {
+			getPageLinks(start_url, 0,"no parent");
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
     public WebCrawlerWithDepth(String start_url) {
     	this.start_url = start_url;
-    	
     	
         //links = new HashSet<>();
         
@@ -95,22 +112,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
        
    
        
-       
-       /*Pattern p = Pattern.compile("^(http(s?)://([^/]+))");
-         Matcher m = p.matcher(url);
-         if (m.find()) {
-             System.out.println(m.group(1));
-         try(BufferedReader in = new BufferedReader(
-                 new InputStreamReader(new URL(m.group(1) + "/robots.txt").openStream()))) {
-             String line = null;
-             while((line = in.readLine()) != null) {
-                 System.out.println(line);
-             }
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
-         }
-         return true;*/
+ 
     }
    
     public static void write_links_tofile() {
@@ -122,8 +124,16 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     		}
     	}
     }
+    public void write_document(String url,Document d) throws IOException
+    {
+    	 fileWriter = new FileWriter(url+".html");
+			
+		 printWriter = new PrintWriter(fileWriter);
+		 
+		 printWriter.print(d.data());
+    }
     
-    public void send_to_indexer(URL url,Document d)
+    public void send_to_indexer(URL url,Document d) throws TransformerException, IOException
     {
     	
 		//Prepare bytes to send
@@ -131,9 +141,9 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		ByteArrayOutputStream bos_url = new ByteArrayOutputStream();
 		ObjectOutput out_url = null;
 		
-		byte[] yourBytes_doc = null;
-		ByteArrayOutputStream bos_doc = new ByteArrayOutputStream();
-		ObjectOutput out_doc = null;
+		//byte[] yourBytes_doc = null;
+		//ByteArrayOutputStream bos_doc = new ByteArrayOutputStream();
+		//ObjectOutput out_doc = null;
 		try {
 			
 			out_url = new ObjectOutputStream(bos_url);   
@@ -142,11 +152,20 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			yourBytes_url = bos_url.toByteArray();
 			//System.out.println(yourBytes_url.length);
 			
-			out_doc = new ObjectOutputStream(bos_doc);   
-			out_doc.writeObject(url);
+			/*out_doc = new ObjectOutputStream(bos_doc);   
+			out_doc.writeObject(d);
 			out_doc.flush();
 			yourBytes_doc = bos_doc.toByteArray();
 			//System.out.println(yourBytes_doc.length);
+			
+			 */
+		/*	TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			DOMSource source = new DOMSource();
+			ByteArrayOutputStream bos=new ByteArrayOutputStream();
+			StreamResult result=new StreamResult(bos);
+			transformer.transform(source, result);
+			yourBytes_doc=bos.toByteArray();*/
 	      
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -154,19 +173,21 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		} finally {
 		  try {
 		    bos_url.close();
-		    bos_doc.close();
+		   // bos_doc.close();
 		  } catch (IOException ex) {
 		    // ignore close exception
 		  }
 		}
 		
 		
+		write_document(url.toString(), d);
 		MPI.COMM_WORLD.Send(yourBytes_url,0,yourBytes_url.length,MPI.BYTE,1,0);
-		MPI.COMM_WORLD.Send(yourBytes_doc,0,yourBytes_doc.length,MPI.BYTE,1,1);
+		//MPI.COMM_WORLD.Send(yourBytes_doc.length,0,1,MPI.INT,1,1);
+		//MPI.COMM_WORLD.Send(yourBytes_doc,0,yourBytes_doc.length,MPI.BYTE,1,2);
 
     }
     
-    public  void getPageLinks(String URL, int depth,String parent) {
+    public  void getPageLinks(String URL, int depth,String parent) throws TransformerException {
     	
     	
     	
@@ -276,7 +297,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		try {
 	    	
 	    	 System.out.println("printing in file");
-			fileWriter = new FileWriter("file_links.txt");
+			 fileWriter = new FileWriter("file_links.txt");
 			
 			 printWriter = new PrintWriter(fileWriter);
 			 

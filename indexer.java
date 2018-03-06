@@ -1,5 +1,8 @@
+package web_crawler_try;
 
 
+
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -7,6 +10,7 @@ import org.omg.CORBA.portable.InputStream;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
@@ -41,12 +45,16 @@ public class indexer implements Serializable{
     {
 		//i think hn7tag nbreak 
 		while(true) {
-		byte[] yourBytes_url= new byte[3000];
-		byte[] yourBytes_doc= new byte[300000];
+		byte[] yourBytes_url= new byte[10000];
+		int document_size=0;
 		URL url_from_crawler=null;
 		Document doc_from_crawler=null;
-		MPI.COMM_WORLD.Recv(yourBytes_url,0,3000,MPI.BYTE,0,0);
-		MPI.COMM_WORLD.Recv(yourBytes_doc,0,300000,MPI.BYTE,0,1);
+		//10000 is assumed to be max url size
+		MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,0);
+	
+		//MPI.COMM_WORLD.Recv(document_size,0,1,MPI.INT,0,1);
+		//byte[] yourBytes_doc= new byte[document_size];
+		//MPI.COMM_WORLD.Recv(yourBytes_doc,0,document_size,MPI.BYTE,0,2);
 		
 		
 		
@@ -71,8 +79,44 @@ public class indexer implements Serializable{
 		  }
 		}
 		
+		
+		try {
+			read_document(url_from_crawler.toString(),d);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+			// Create object from bytes
+			/*ByteArrayInputStream bis2 = new ByteArrayInputStream(yourBytes_doc);
+			ObjectInput in2 = null;
+			try {
+				in2 = new ObjectInputStream(bis2);
+				doc_from_crawler = (Document) in2.readObject();
+				System.out.println("doc_from_crawler ----> " + doc_from_crawler.toString().length());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				try {
+					if (in != null) {
+
+						in.close();
+					}
+				} catch (IOException ex) {
+					// ignore close exception
+				}
+			}*/
+		
     }
     }
+
+	private void read_document(String url, Document d) throws IOException {
+		// TODO Auto-generated method stub
+		
+		File input = new File(url+".html");
+		d = Jsoup.parse(input, "UTF-8");
+	}
 	
 
 }
