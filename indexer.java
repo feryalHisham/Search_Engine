@@ -18,6 +18,9 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +28,9 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.io.Files;
 import com.trigonic.jrobotx.RobotExclusion;
 import mpi.*;
 
@@ -37,14 +43,15 @@ public class indexer implements Serializable{
 	}
 	
 	public void start_indexer(URL url,Document d) throws ClassNotFoundException{
-		
+		while(true) {
 		recv_from_crawler( url, d);
+		}
 		
 	}
 	public void recv_from_crawler(URL url,Document d) throws ClassNotFoundException
     {
 		//i think hn7tag nbreak 
-		while(true) {
+		
 		byte[] yourBytes_url= new byte[10000];
 		int document_size=0;
 		URL url_from_crawler=null;
@@ -52,11 +59,6 @@ public class indexer implements Serializable{
 		//10000 is assumed to be max url size
 		MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,0);
 	
-		//MPI.COMM_WORLD.Recv(document_size,0,1,MPI.INT,0,1);
-		//byte[] yourBytes_doc= new byte[document_size];
-		//MPI.COMM_WORLD.Recv(yourBytes_doc,0,document_size,MPI.BYTE,0,2);
-		
-		
 		
 		//Create object from bytes
 		ByteArrayInputStream bis = new ByteArrayInputStream(yourBytes_url);
@@ -87,35 +89,31 @@ public class indexer implements Serializable{
 			e.printStackTrace();
 		}
 		
-			// Create object from bytes
-			/*ByteArrayInputStream bis2 = new ByteArrayInputStream(yourBytes_doc);
-			ObjectInput in2 = null;
-			try {
-				in2 = new ObjectInputStream(bis2);
-				doc_from_crawler = (Document) in2.readObject();
-				System.out.println("doc_from_crawler ----> " + doc_from_crawler.toString().length());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} finally {
-				try {
-					if (in != null) {
-
-						in.close();
-					}
-				} catch (IOException ex) {
-					// ignore close exception
-				}
-			}*/
-		
-    }
     }
 
 	private void read_document(String url, Document d) throws IOException {
 		// TODO Auto-generated method stub
-		
-		File input = new File(url+".html");
+		final CharMatcher ALNUM =
+  			  CharMatcher.inRange('a', 'z').or(CharMatcher.inRange('A', 'Z'))
+  			  .or(CharMatcher.inRange('0', '9')).precomputed();
+  		
+       String alphaAndDigits = ALNUM.retainFrom(url);
+		File input = new File("documents/"+alphaAndDigits+".html");
 		d = Jsoup.parse(input, "UTF-8");
+	
+	
+		if(input.delete()){
+			System.out.println(input.getName() + " is deleted!");
+		}else{
+			System.out.println("Delete operation is failed.");
+		}
+	
+		 
+		  /* Elements linksOnPage = d.select("a[href]");
+		   System.out.println("url indexer check---->"+url +" : ");
+		   for (Element page : linksOnPage) {
+               System.out.println(page.attr("abs:href"));
+           }*/
 	}
 	
 

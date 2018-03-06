@@ -33,6 +33,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
+
+import com.google.common.base.CharMatcher;
 import com.trigonic.jrobotx.RobotExclusion;
 import mpi.*;
 
@@ -126,11 +128,16 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     }
     public void write_document(String url,Document d) throws IOException
     {
-    	 fileWriter = new FileWriter(url+".html");
+    	final CharMatcher ALNUM =
+    			  CharMatcher.inRange('a', 'z').or(CharMatcher.inRange('A', 'Z'))
+    			  .or(CharMatcher.inRange('0', '9')).precomputed();
+    		
+         String alphaAndDigits = ALNUM.retainFrom(url);
+    	 fileWriter_doc = new FileWriter("documents/"+alphaAndDigits+".html");
 			
-		 printWriter = new PrintWriter(fileWriter);
+		 printWriter_doc = new PrintWriter(fileWriter_doc);
 		 
-		 printWriter.print(d.data());
+		 printWriter_doc.print(d);
     }
     
     public void send_to_indexer(URL url,Document d) throws TransformerException, IOException
@@ -150,22 +157,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			out_url.writeObject(url);
 			out_url.flush();
 			yourBytes_url = bos_url.toByteArray();
-			//System.out.println(yourBytes_url.length);
 			
-			/*out_doc = new ObjectOutputStream(bos_doc);   
-			out_doc.writeObject(d);
-			out_doc.flush();
-			yourBytes_doc = bos_doc.toByteArray();
-			//System.out.println(yourBytes_doc.length);
-			
-			 */
-		/*	TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource();
-			ByteArrayOutputStream bos=new ByteArrayOutputStream();
-			StreamResult result=new StreamResult(bos);
-			transformer.transform(source, result);
-			yourBytes_doc=bos.toByteArray();*/
 	      
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -182,8 +174,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		
 		write_document(url.toString(), d);
 		MPI.COMM_WORLD.Send(yourBytes_url,0,yourBytes_url.length,MPI.BYTE,1,0);
-		//MPI.COMM_WORLD.Send(yourBytes_doc.length,0,1,MPI.INT,1,1);
-		//MPI.COMM_WORLD.Send(yourBytes_doc,0,yourBytes_doc.length,MPI.BYTE,1,2);
+	
 
     }
     
