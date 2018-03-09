@@ -174,12 +174,20 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 
     public static void write_unvisited_tofile_re() {
         
-        while(!unvisited.isEmpty())
-        {
+       int unvisited_size = unvisited.size();
+    	
+    	for(int i=0;i<unvisited_size;i++) {
+    		
+    		BasicDBObject url = new BasicDBObject();
+    		Pair<String,String> top = unvisited.poll();
+    		
+    	    printWriter_url_re.print(top.getLeft()+" parent "+top.getLeft()+'\n');
+    	       
+    		
+    		unvisited.add(top);
+    	}
         	
-            printWriter_url_re.print(unvisited.poll().getLeft()+" parent "+unvisited.poll().getLeft()+'\n');
-           		
-        }
+          
        
         }
 
@@ -310,6 +318,23 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	url.put("out_links_no", out_links);
     
     	collection.insert(url);
+	    }
+	    else 
+	    {
+	    	
+		
+				//System.out.println("only one parent at a time for "+ key);
+			BasicDBObject object= (BasicDBObject) cursor.next();
+			   //  String parenturl_id = object.getString("url_name");
+			    
+
+			//append the parenturl_id  to the url which is the key in the map (and it already exists in the DB)
+			BasicDBObject newDocument = new BasicDBObject();
+			newDocument.append("$set", new BasicDBObject().append("document", d.toString()).append("out_links_no", out_links));  //to be added to in_links_id
+
+
+			collection.update(object, newDocument);
+	    	
 	    }
     }
         
@@ -554,10 +579,13 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
          DBCursor cursor = collection.find(searchQuery);
          
          while(cursor.hasNext()) {
- 			
+        	 
+           
   		   BasicDBObject object = (BasicDBObject) cursor.next();
   	       String link_name = object.getString("url_name");
   	       
+  	       System.out.println("url_from_db_re--->"+link_name);
+			
   	       unvisited.add(new Pair<String,String>(link_name,"no parent"));
   	       
          }
@@ -575,6 +603,9 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
  		   BasicDBObject object2 = (BasicDBObject) cursor2.next();
  	       String link_name = object2.getString("link_name");
  	       String parent_name = object2.getString("parent_name");
+ 	       
+ 	        System.out.println("url_from_unvisited_re--->"+link_name+" "+parent_name);
+			
  	       unvisited.add(new Pair<String,String>(link_name,parent_name));
      			    
            }
@@ -635,7 +666,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
             	{
             		//there is a change in document
             		
-            		 delete_url_and_childs_fromDB(url.getLeft());
+            		 delete_url_childs_fromDB(url.getLeft());
             	    
             		 parse_and_insert_while_crawling(url,new_document,true);
             	}
@@ -792,7 +823,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
         
 		
 	}
-	public void delete_url_and_childs_fromDB(String url)
+	public void delete_url_childs_fromDB(String url)
      {      DBCollection collection = database.getCollection("url");
     		DBCursor cursor = collection.find(new BasicDBObject("url_name",  url),new BasicDBObject("url_name",1));
     		
@@ -816,10 +847,10 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			    collection.updateMulti( query, update );
 			    
 			    
-			    //to remove the entire row of this url
+			    /*//to remove the entire row of this url
 			    BasicDBObject document = new BasicDBObject();
 			    document.put("url_name", url);
-			    collection.remove(document);
+			    collection.remove(document);*/
 			}
     	
        
