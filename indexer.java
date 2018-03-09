@@ -32,7 +32,10 @@ import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.io.Files;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.MongoClient;
 import com.trigonic.jrobotx.RobotExclusion;
 import mpi.*;
@@ -103,11 +106,19 @@ public class indexer implements Serializable{
 
 	private void get_document_from_db(String url, Document d) {
 		// TODO Auto-generated method stub
+		DBCollection collection = database.getCollection("url");
+		DBCursor cursor = collection.find(new BasicDBObject("url_name", url),new BasicDBObject("document",1));
 		
+		//---?? leeh de while
+		String doc_from_db = null;
+		while(cursor.hasNext()) {
+			//System.out.println("only one parent at a time for "+ key);
+		     BasicDBObject object = (BasicDBObject) cursor.next();
+		     doc_from_db = object.getString("document");
+		    
+		}
 		//to do
-		String doc_from_db="<html><head><title>First parse</title></head>"
-				  + "<body><p>Parsed HTML into a doc.</p></body></html>";
-		
+	
 		//Parse a document from a String
 		d= Jsoup.parse(doc_from_db);
 		
