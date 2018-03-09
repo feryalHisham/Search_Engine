@@ -1,3 +1,4 @@
+package web_crawler_try;
 
 import org.jsoup.Jsoup;
 import org.jsoup.UncheckedIOException;
@@ -144,7 +145,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	for (String key : links.keySet()) {
     		
     		for(String value: links.get(key)) {
-    			printWriter.print(key+" VALUE "+links.get(key).size()+value+'\n');
+    			printWriter.print(key+" VALUE "+links.get(key).size()+" "+value+'\n');
     		}
     	}
     }
@@ -208,8 +209,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		  }
 		}
 		
-		//prints the HTML document and the file name is the url without the special characters
-		write_document(url.toString(), d);
+		//send the url after it's document inserted in db
+		//write_document(url.toString(), d);
 		MPI.COMM_WORLD.Send(yourBytes_url,0,yourBytes_url.length,MPI.BYTE,1,0);
 	
 
@@ -233,7 +234,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
         	Pair<String,String> URL =  unvisited.poll();
             
             //Find only almost 100 websites.
-            if(links.size()>500)return;
+            if(links.size()>200)return;
            
             boolean ok = false;
             URL url = null;
@@ -307,7 +308,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                     	
                       
                         
-                        //System.out.println("thread "+Thread.currentThread().getName()+" added 3ady"); 
+                        System.out.println("thread "+Thread.currentThread().getName()+" added 3ady"); 
                         
                     	
                     	//gets the HTML Document of the URL 
@@ -316,7 +317,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                     	
                        //System.out.println("sending to indexer");
                        //System.out.println("links size"+links.size());
-                       send_to_indexer(new URL(URL.getLeft()),document);
+                      // send_to_indexer(new URL(URL.getLeft()),document);
                         
                         
                         //.userAgent("Mozilla") for http error fetching url ----- try this
@@ -327,8 +328,11 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                         Elements linksOnPage = document.select("a[href]");
                         Elements linksOnPage2 = document.select("iframe");
                       
-                        printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n');
+                        //printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n'); ---????
+                        
                         insert_url_in_db(URL.getLeft(),document.toString(),linksOnPage.size()+linksOnPage2.size());
+                        send_to_indexer(new URL(URL.getLeft()),document);
+                        
                         
                         //5. For each extracted URL... go back to Step 4.
                         for (Element page : linksOnPage2) {
@@ -337,9 +341,12 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                         	Vector<String> initial2=new Vector<String>();
                             initial2.add(URL.getLeft());  //ana al parent bta3hom
                         
-                        	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed"))
+                        	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed")&&page.attr("src").contains("youtube"))
                         	{
-                        		
+                        		Document document_video = Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
+                                 
+                        		//0 out_links as doesn't matter
+                        	    insert_url_in_db(page.attr("src"),document_video.toString(),0);
                         		//System.out.println("2nd>>"+Thread.currentThread().getName() + " [" + page.attr("src") + "]");      
                         	}
                         }
@@ -381,14 +388,17 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     			//get the id of the parent url by its name and selects only the field url_name to return
     			DBCursor cursor = collection.find(new BasicDBObject("url_name", value),new BasicDBObject("url_name",1));
     			
+    			//---?? leeh de while
     			while(cursor.hasNext()) {
     				//System.out.println("only one parent at a time for "+ key);
     			     BasicDBObject object = (BasicDBObject) cursor.next();
-    			     String parenturl_id = object.getString("url_name");
+    			   //  String parenturl_id = object.getString("url_name");
+    			    
+    			    
     			
     			//append the parenturl_id  to the url which is the key in the map (and it already exists in the DB)
     			BasicDBObject newDocument = new BasicDBObject();
-    			newDocument.append("$push", new BasicDBObject().append("in_links_id",parenturl_id ));  //to be added to in_links_id
+    			newDocument.append("$push", new BasicDBObject().append("in_links_id", object.getObjectId("_id") ));  //to be added to in_links_id
 
     			BasicDBObject searchQuery = new BasicDBObject().append("url_name", key);
 
@@ -421,7 +431,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	
     	try {
 			mongoClient = new MongoClient();
-		    database = mongoClient.getDB("SE_2bleel");
+		    database = mongoClient.getDB("search_engine");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -494,6 +504,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		MPI.COMM_WORLD.Send(end_of_send,0,1,MPI.INT,1,1);*/
 		
 	    printWriter.close();
+	    printWriter_url.close();
 
             
     }
