@@ -1,5 +1,8 @@
 package web_crawler_try;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.jsoup.Jsoup;
 import org.jsoup.UncheckedIOException;
 import org.jsoup.nodes.Document;
@@ -8,6 +11,7 @@ import org.jsoup.select.Elements;
 import org.omg.CORBA.portable.InputStream;
 import org.w3c.dom.Node;
 
+import java.awt.List;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
@@ -20,6 +24,8 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +68,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     int no_of_threads;
     static MongoClient mongoClient ;
 	static DB database ;
+	
+	  int counter=0;
 	//concurrent queue for synch.
 	//queue of pair of url and its parent url
     public static ConcurrentLinkedQueue<Pair<String,String>> unvisited = new ConcurrentLinkedQueue<Pair<String,String>>();
@@ -320,11 +328,12 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                         
                         	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed")&&page.attr("src").contains("youtube"))
                         	{
-                        		Document document_video = Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
+                        		//Document document_video = Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
                                  
                         		//0 out_links as doesn't matter
-                        	    insert_url_in_db(page.attr("src"),document_video.toString(),0);
-                        	    send_to_indexer(new URL(page.attr("src")),document_video);
+                        		//a3takd al document bta3 al parent ahm laan da i_frame
+                        	    insert_url_in_db(page.attr("src"),document.toString(),0);
+                        	    send_to_indexer(new URL(page.attr("src")),document);
                                 
                         	}
                         }
@@ -434,6 +443,24 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
        unvisited.add(new Pair<String,String>("https://dzone.com","no parent"));
        unvisited.add(new Pair<String,String>("https://www.facebook.com/","no parent"));
        
+     
+       TimerTask timerTask = new TimerTask() {
+
+           @Override
+           public void run() {
+               System.out.println("TimerTask executing counter is: " + counter);
+               counter++;
+               write_links_toDb();
+  			 
+  		       write_unvisited_toDb();
+           }
+       };
+
+       Timer timer = new Timer("MyTimer");//create a new Timer
+
+       timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
+       
+       
        Thread[] threads=new Thread[no_of_threads];
        for(Integer i=1;i<=no_of_threads;i++)
        {
@@ -464,9 +491,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			 
 			
 			
-			 write_links_tofile();
-			 
-		     //write_unvisited_tofile();
+			
 		     
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -477,9 +502,64 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		
 	    printWriter.close();
 	    printWriter_url.close();
+	    links.clear();
+	    unvisited.clear();
 
             
     }
+	private void write_unvisited_toDb() {
+		// TODO Auto-generated method stub
+		DBCollection collection = database.getCollection("unvisited_links");
+    	BasicDBObject url = new BasicDBObject();
+    	
+    	BasicDBObject document = new BasicDBObject();
+
+    	// Delete All documents from collection Using blank BasicDBObject
+    	collection.remove(document);
+    	
+    	for(Pair<String,String> anObject : unvisited){
+    	    //do someting to anObject...
+			 url.put("link_name", anObject.getLeft());
+			 url.put("parent_name", anObject.getRight());
+			 collection.insert(url);
+		}
+    		
+    
+		
+		
+	}
+	private void write_links_toDb() {
+		// TODO Auto-generated method stub
+		
+		DBCollection collection = database.getCollection("visited_links");
+    	BasicDBObject url = new BasicDBObject();
+    	
+    	BasicDBObject document = new BasicDBObject();
+
+    	// Delete All documents from collection Using blank BasicDBObject
+    	collection.remove(document);
+		
+    	ArrayList<String> array;
+         for (String key : links.keySet()) {
+    		
+        	 if(key!=null&&key.length()!=0)
+        	 url.put("link_name", key);
+        	 else
+        		 continue;
+        	 array = new ArrayList<String>();
+    		for(String value: links.get(key)) {
+    			
+    			if(value!=null&&value.length()!=0)
+    			array.add(value);
+    			else
+    				continue;
+    		}
+    		url.put("parent_links",array);
+    		
+    		collection.insert(url);
+    	}
+		
+	}
    
     
     
