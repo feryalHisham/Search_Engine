@@ -99,7 +99,7 @@ public class indexer implements Serializable{
 		}
 		
 		
-		//read_document(url_from_crawler.toString(),d);
+	
 		get_document_from_db(url_from_crawler.toString(),d);
 		
     }
@@ -126,30 +126,7 @@ public class indexer implements Serializable{
 		
 	}
 
-	private void read_document(String url, Document d) throws IOException {
-		// TODO Auto-generated method stub
-		final CharMatcher ALNUM =
-  			  CharMatcher.inRange('a', 'z').or(CharMatcher.inRange('A', 'Z'))
-  			  .or(CharMatcher.inRange('0', '9')).precomputed();
-  		
-       String alphaAndDigits = ALNUM.retainFrom(url);
-		File input = new File("documents/"+alphaAndDigits+".html");
-		d = Jsoup.parse(input, "UTF-8");
 	
-	
-		if(input.delete()){
-			System.out.println(input.getName() + " is deleted!");
-		}else{
-			System.out.println("Delete operation is failed.");
-		}
-	
-		 
-		  /* Elements linksOnPage = d.select("a[href]");
-		   System.out.println("url indexer check---->"+url +" : ");
-		   for (Element page : linksOnPage) {
-               System.out.println(page.attr("abs:href"));
-           }*/
-	}
 	
 
 }

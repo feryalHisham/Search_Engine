@@ -58,8 +58,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     static PrintWriter printWriter;
     static FileWriter  fileWriter_url;
     static PrintWriter printWriter_url;
-    static FileWriter  fileWriter_doc;
-    static PrintWriter printWriter_doc;
+  
     int no_of_threads;
     static MongoClient mongoClient ;
 	static DB database ;
@@ -161,20 +160,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     }
    
     }
-  //prints the HTML document and the file name is the url without the special characters
-    public void write_document(String url,Document d) throws IOException
-    {
-    	final CharMatcher ALNUM =
-    			  CharMatcher.inRange('a', 'z').or(CharMatcher.inRange('A', 'Z'))
-    			  .or(CharMatcher.inRange('0', '9')).precomputed();
-    		
-         String alphaAndDigits = ALNUM.retainFrom(url);
-    	 fileWriter_doc = new FileWriter("documents/"+alphaAndDigits+".html");
-			
-		 printWriter_doc = new PrintWriter(fileWriter_doc);
-		 
-		 printWriter_doc.print(d);
-    }
+
     
     //uses MPI to send the URLs to the indexer 
     //the indexer will receive this url and read its corresponding document from the DB
@@ -186,9 +172,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		ByteArrayOutputStream bos_url = new ByteArrayOutputStream();
 		ObjectOutput out_url = null;
 		
-		//byte[] yourBytes_doc = null;
-		//ByteArrayOutputStream bos_doc = new ByteArrayOutputStream();
-		//ObjectOutput out_doc = null;
+		
 		try {
 			
 			out_url = new ObjectOutputStream(bos_url);   
@@ -299,10 +283,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
             //merge returns the value of the key specified(1st param.)
             if (is_allowed &&(links.merge(URL.getLeft(),initial ,reMappingFunction)).size()==1) {
             	
-            		/*if (URL.getLeft().contains("/watch?v=")) {
-                    	// System.out.println("1st>> "+Thread.currentThread().getName()+">> Depth: " + depth + " [" + URL + "]");     
-                    	
-                    }*/
+            	
                     
                     try {
                     	
@@ -315,16 +296,12 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                        Document document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
                        
                     	
-                       //System.out.println("sending to indexer");
-                       //System.out.println("links size"+links.size());
-                      // send_to_indexer(new URL(URL.getLeft()),document);
-                        
+                     
                         
                         //.userAgent("Mozilla") for http error fetching url ----- try this
                         //.ignoreContentType(true) for invalid content type
                         //w check alength aly foa llexception kda msh fkrah brdo
-                        //with depth = 5 gab 988 total
-                     
+                
                         Elements linksOnPage = document.select("a[href]");
                         Elements linksOnPage2 = document.select("iframe");
                       
@@ -347,7 +324,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                                  
                         		//0 out_links as doesn't matter
                         	    insert_url_in_db(page.attr("src"),document_video.toString(),0);
-                        		//System.out.println("2nd>>"+Thread.currentThread().getName() + " [" + page.attr("src") + "]");      
+                        	    send_to_indexer(new URL(page.attr("src")),document_video);
+                                
                         	}
                         }
                         
@@ -437,12 +415,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			e1.printStackTrace();
 		}
     	
-    	//mongoClient.getDatabaseNames().forEach(System.out::println);
-
-
     	
-    	
-    	//database.getCollectionNames().forEach(System.out::println);
 		
     	try {
 			fileWriter = new FileWriter("link_by_link.txt");
@@ -500,8 +473,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			e.printStackTrace();
 		}
 	    
-		/*int[] end_of_send= {1};
-		MPI.COMM_WORLD.Send(end_of_send,0,1,MPI.INT,1,1);*/
+	
 		
 	    printWriter.close();
 	    printWriter_url.close();
