@@ -28,16 +28,13 @@ public class DatabaseComm {
     public void insertWord(String tag){
 
             occurence++;
-            if(wordtags.containsKey(tag))
+            if(wordtags.containsKey(tag)){
                 wordtags.put(tag,wordtags.get(tag)+1);
+            }
+            else
+                wordtags.put(tag,1);
 
     }
-    public void initWord(String tag){
 
-        occurence=0;
-        if(wordtags.containsKey(tag))
-            wordtags.put(tag,0);
-
-    }
 
 }

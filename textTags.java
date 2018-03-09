@@ -14,12 +14,12 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 public class textTags {
-    public static Set<String> docWords;
+    public static Set<String> docWords=new HashSet<String>();
     public static stopwords checkStopWord;
-    textTags(){
-        docWords=new HashSet<String>();
-        checkStopWord=new stopwords();
-    }
+//    textTags(){
+//        docWords=new HashSet<String>();
+//        checkStopWord=new stopwords();
+//    }
 
      public String modifyWord(String word,String tag){
 
@@ -45,7 +45,7 @@ public class textTags {
 
     public static void main(String[] args) throws IOException {
 
-
+        checkStopWord=new stopwords();
         textTags teTags=new textTags();
         String file="test2.html"; //get from url
         //unique for the check on the whole txt afterwards
@@ -81,10 +81,11 @@ public class textTags {
 
                     docWords.add(word);
                     word=teTags.modifyWord(word,tag);
-                    if (objToInsert.containsKey(word))
-                        objToInsert.get(word).insertWord(tag);
-                    else
-                        objToInsert.get(word).initWord(tag);
+                    if (! objToInsert.containsKey(word))
+                        objToInsert.put(word,new DatabaseComm());
+
+                    objToInsert.get(word).insertWord(tag);
+
                     outstream.write(word + " ");
 
                 }
@@ -100,31 +101,33 @@ public class textTags {
 
             word=teTags.modifyWord(word,"p");
             outstream.write(word + " ");
-            if (objToInsert.containsKey(word))
-                objToInsert.get(word).insertWord("p");
-            else
-                objToInsert.get(word).initWord("p");
+            if (! objToInsert.containsKey(word))
+                objToInsert.put(word,new DatabaseComm());
+
+            objToInsert.get(word).insertWord("p");
 
         }
+
+        DB db=null;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        try {
+
+            MongoClient mongoClient = new MongoClient("localhost", 27017);
+            db = mongoClient.getDB("indexerTest");
+            System.out.println("Connected to Database");
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+
+        System.out.println("Server is ready ");
+
+
+        DBCollection collection = db.getCollection("wordsIndex");
+
         for (Map.Entry<String,DatabaseComm> insert:objToInsert.entrySet()){
 
-            DB db=null;
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-            try {
-
-                MongoClient mongoClient = new MongoClient("localhost", 27017);
-                db = mongoClient.getDB("indexerTest");
-                System.out.println("Connected to Database");
-
-            } catch (Exception e) {
-                System.out.println(e);
-            }
-
-
-            System.out.println("Server is ready ");
-
-
-            DBCollection collection = db.getCollection("wordsIndex");
 //            BasicDBObject document = new BasicDBObject();
 //            document.put("database", "mkyongDB");
 //            document.put("table", "hosting");
