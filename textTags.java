@@ -81,6 +81,9 @@ public class textTags {
 
 //                    docWords.add(word);
                     word=teTags.modifyWord(word,tag);
+                    if(word.length()<=1&& word!="a")
+                        continue;
+
                     if (! objToInsert.containsKey(word))
                         objToInsert.put(word,new DatabaseComm());
 
@@ -109,6 +112,7 @@ public class textTags {
         }
 
         DB db=null;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         try {
 
             MongoClient mongoClient = new MongoClient("localhost", 27017);
@@ -118,49 +122,56 @@ public class textTags {
         } catch (Exception e) {
             System.out.println(e);
         }
-        System.out.println("Server is ready ");
-        DBCollection collection = db.getCollection("wordsIndex");
 
+
+        System.out.println("Server is ready ");
+
+
+        DBCollection collection = db.getCollection("wordsIndex");
 
         for (Map.Entry<String,DatabaseComm> insert:objToInsert.entrySet()){
 
-            BasicDBObject query = new BasicDBObject();
-            query.put("word", insert.getKey());
-            DBCursor cursor = collection.find(query);
-
-            if(cursor.hasNext()){
-                //TODO:get the object update the object
-                //increase idf
-                BasicDBObject newDocument =new BasicDBObject().append("$inc",
-                                new BasicDBObject().append("idf", 1));
-
-                collection.update(new BasicDBObject().append("word", insert.getKey()), newDocument);
-                //add url with its tags and occurance to the object
-                //update the word object
-            }else{
-                //TODO:create object with idf 0
-                //create object(url, its tags and occ)
-                //insert object
-            }
-//            BasicDBObject document = new BasicDBObject();
-//            document.put("database", "mkyongDB");
-//            document.put("table", "hosting");
-//
-//            BasicDBObject documentDetail = new BasicDBObject();
-//            documentDetail.put("records", 99);
-//            documentDetail.put("index", "vps_index1");
-//            documentDetail.put("active", "true");
-//            document.put("detail", documentDetail);
-//
-//            collection.insert(document);
 
 
-            for (Map.Entry<String,Integer> tagsOccur:insert.getValue().getWordtags().entrySet()){
+            BasicDBObject theWord = new BasicDBObject();
 
+            theWord.put("word",insert.getKey());
 
+            DBCursor dbCursor = collection.find(theWord);
+            if (dbCursor.hasNext()){
+                // the word is already exists in our db
 
             }
-        }
+            else {
+                // the word isnot inserted yeeeeet
+                // lets insert it b2a
+                System.out.println("ana awl mra ashof l kelma d");
+                theWord.put("idf", 1);
+                List<BasicDBObject> occurence = new ArrayList<>();
+                for (Map.Entry<String, Integer> tagsOccur : insert.getValue().getWordtags().entrySet()) {
+
+                    BasicDBObject occurenceTag = new BasicDBObject();
+                    occurenceTag.put("tagName", tagsOccur.getKey());
+                    occurenceTag.put("numOccur", tagsOccur.getValue());
+                    occurence.add(occurenceTag);
+
+                }
+
+                List<BasicDBObject> URLs = new ArrayList<>();
+                BasicDBObject urlObject = new BasicDBObject();
+                urlObject.put("url", url);
+                urlObject.put("tf", insert.getValue().getOccurence());
+                urlObject.put("occurence", occurence);
+
+                URLs.add(urlObject);
+                theWord.put("urls", URLs);
+
+                collection.insert(theWord);
+            }
+
+            }
+
+
             outstream.close();
     }
 }
