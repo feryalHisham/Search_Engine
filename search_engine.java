@@ -1,3 +1,5 @@
+package web_crawler_try;
+
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -30,6 +32,8 @@ public class search_engine {
 		MPI.Init(args);
 		Integer rank=MPI.COMM_WORLD.Rank();
 		Integer size=MPI.COMM_WORLD.Size();
+		
+		
 		
 		if(rank==0)
 		{

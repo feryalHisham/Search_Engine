@@ -64,12 +64,15 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     static PrintWriter printWriter;
     static FileWriter  fileWriter_url;
     static PrintWriter printWriter_url;
+    static FileWriter  fileWriter_url_re;
+    static PrintWriter printWriter_url_re;
   
     int no_of_threads;
     static MongoClient mongoClient ;
 	static DB database ;
 	
-	  int counter=0;
+	 int counter=0;
+	 static int priority=0;
 	//concurrent queue for synch.
 	//queue of pair of url and its parent url
     public static ConcurrentLinkedQueue<Pair<String,String>> unvisited = new ConcurrentLinkedQueue<Pair<String,String>>();
@@ -169,6 +172,17 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
    
     }
 
+    public static void write_unvisited_tofile_re() {
+        
+        while(!unvisited.isEmpty())
+        {
+        	
+            printWriter_url_re.print(unvisited.poll().getLeft()+" parent "+unvisited.poll().getLeft()+'\n');
+           		
+        }
+       
+        }
+
     
     //uses MPI to send the URLs to the indexer 
     //the indexer will receive this url and read its corresponding document from the DB
@@ -221,143 +235,14 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
    * 
     */
     public  void bfs() throws IOException, TransformerException{
-        unvisited.add(new Pair<String,String>(start_url,"no parent"));
+        //unvisited.add(new Pair<String,String>(start_url,"no parent"));
         while(! unvisited.isEmpty()){ 
         	Pair<String,String> URL =  unvisited.poll();
             
             //Find only almost 100 websites.
             if(links.size()>200)return;
            
-            boolean ok = false;
-            URL url = null;
-            BufferedReader br = null;
-            
-            
-            //keeps polling until reaches a correct link with no problems
-            while(!ok){ 
-                try{
-                    url = new URL(URL.getLeft());
-                    br = new BufferedReader(new InputStreamReader(url.openStream()));
-                    ok = true;
-                }catch(MalformedURLException e){
-                    System.out.println("\nMalformedURL : "+URL.getLeft()+"\n");
-                    //Get next URL from queue
-                    if(!unvisited.isEmpty())
-                    {
-                   URL =  unvisited.poll();
-                    ok = false;
-                    }
-                    else return;
-                   
-                }catch(IOException e){
-                    System.out.println("\nIOException for URL : "+URL+"\n");
-                    //Get next URL from queue
-                    if(!unvisited.isEmpty())
-                    {
-                    URL =  unvisited.poll();
-                    ok = false;
-                    }
-                    else return;
-                }
-            }     
-            
-            
-        	//checks the robots.txt allowance
-        	boolean is_allowed=read_robot(URL.getLeft());
-       
-        	//URL.getRight() will return the url itself 
-        	String parent=URL.getRight();
-        	
-        	// used in merge function it is called when the key already exists and we need to update its value
-        	BiFunction<Vector<String>, Vector<String>, Vector<String>> reMappingFunction = (Vector<String> oldvec, Vector<String> newvec) -> {
-        		Vector<String> temp = new Vector<String>();
-                temp.addAll(oldvec);
-               
-                if(!temp.contains(parent))
-                { 
-          	     temp.add(parent); 
-                }
-                else temp.add("same parent");
-                return temp;
-            };
-            
-            
-            //initial value of the map key (the first parent) it is used in the merge function
-            Vector<String> initial=new Vector<String>();
-            initial.add(URL.getRight());
-        	 
-            
-            //merge function checks if the key exists if yes calls remapping function if no adds the key with the initial value
-            //merge returns the value of the key specified(1st param.)
-            if (is_allowed &&(links.merge(URL.getLeft(),initial ,reMappingFunction)).size()==1) {
-            	
-            	
-                    
-                    try {
-                    	
-                      
-                        
-                        System.out.println("thread "+Thread.currentThread().getName()+" added 3ady"); 
-                        
-                    	
-                    	//gets the HTML Document of the URL 
-                       Document document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
-                       
-                    	
-                     
-                        
-                        //.userAgent("Mozilla") for http error fetching url ----- try this
-                        //.ignoreContentType(true) for invalid content type
-                        //w check alength aly foa llexception kda msh fkrah brdo
-                
-                        Elements linksOnPage = document.select("a[href]");
-                        Elements linksOnPage2 = document.select("iframe");
-                      
-                        //printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n'); ---????
-                        
-                        insert_url_in_db(URL.getLeft(),document.toString(),linksOnPage.size()+linksOnPage2.size());
-                        send_to_indexer(new URL(URL.getLeft()),document);
-                        
-                        
-                        //5. For each extracted URL... go back to Step 4.
-                        for (Element page : linksOnPage2) {
-                        	
-                  
-                        	Vector<String> initial2=new Vector<String>();
-                            initial2.add(URL.getLeft());  //ana al parent bta3hom
-                        
-                        	if((links.merge(page.attr("src"),initial2 ,reMappingFunction)).size()==1&&page.attr("src").contains("/embed")&&page.attr("src").contains("youtube"))
-                        	{
-                        		//Document document_video = Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
-                                 
-                        		//0 out_links as doesn't matter
-                        		//a3takd al document bta3 al parent ahm laan da i_frame
-                        	    insert_url_in_db(page.attr("src"),document.toString(),0);
-                        	    send_to_indexer(new URL(page.attr("src")),document);
-                                
-                        	}
-                        }
-                        
-                      
-                        for (Element page : linksOnPage) {
-                         //   getPageLinks(page.attr("abs:href"),URL);
-                            unvisited.add(new Pair<String,String>(page.attr("abs:href"),URL.getLeft()));
-                        
-                       
-                            
-                        }
-                        
-                     
-                    } catch (IOException e) {
-                        System.err.println("For '" + URL + "': " + e.getMessage());
-                    }catch(UncheckedIOException e) {
-                    	System.err.println("For '" + URL + "': " + e.getMessage());
-                	}
-                	
-            	
-            	
-      
-            }
+           parse_and_insert_while_crawling(URL,null,false);
         }
     }
         
@@ -365,43 +250,57 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     {
     	DBCollection collection = database.getCollection("url");
     	System.out.println("collec " + collection);
-    	
+    	int actual_in_links;
+    	BasicDBObject searchQuery ;
         for (String key : links.keySet()) {
-    		
+        	actual_in_links=0;
+        	searchQuery = new BasicDBObject().append("url_name", key);
     		for(String value: links.get(key)) {
     			
     			if(!(value.equals("no parent") ||  value.equals("same parent"))) {
     		
+    			actual_in_links++;
     			//get the id of the parent url by its name and selects only the field url_name to return
     			DBCursor cursor = collection.find(new BasicDBObject("url_name", value),new BasicDBObject("url_name",1));
     			
     			//---?? leeh de while
     			while(cursor.hasNext()) {
     				//System.out.println("only one parent at a time for "+ key);
-    			     BasicDBObject object = (BasicDBObject) cursor.next();
+    				BasicDBObject object= (BasicDBObject) cursor.next();
     			   //  String parenturl_id = object.getString("url_name");
     			    
-    			    
-    			
+ 
     			//append the parenturl_id  to the url which is the key in the map (and it already exists in the DB)
     			BasicDBObject newDocument = new BasicDBObject();
     			newDocument.append("$push", new BasicDBObject().append("in_links_id", object.getObjectId("_id") ));  //to be added to in_links_id
 
-    			BasicDBObject searchQuery = new BasicDBObject().append("url_name", key);
 
     			collection.update(searchQuery, newDocument);
     			}
     		}
     		}
+    		
+    	   DBObject update = new BasicDBObject();
+		   update.put("$set", new BasicDBObject("in_links_no",actual_in_links));
+				
+		   collection.update(searchQuery, update);
         }
     }
     void insert_url_in_db(String url_name, String d,int out_links)
     {
     	DBCollection collection = database.getCollection("url");
+    	
+    	DBCursor cursor = collection.find(new BasicDBObject("url_name",url_name));
+			
+    	  
+	    if(!cursor.hasNext()) {
+	    // url not in db
+	    		
     	BasicDBObject url = new BasicDBObject();
     	
     	url.put("url_name", url_name);
-    	url.put("pr", 1);
+    	url.put("pr", priority);
+    	priority++;
     	if(url_name.contains("/watch?v=")||(url_name.contains("youtube")&&url_name.contains("embed")))
     	url.put("is_video", true);
     	else
@@ -409,8 +308,9 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	
     	url.put("document", d);
     	url.put("out_links_no", out_links);
-        
+    
     	collection.insert(url);
+	    }
     }
         
     public void start_crawler() throws InterruptedException
@@ -423,19 +323,11 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-    	
-    	
+    
 		
-    	try {
-			fileWriter = new FileWriter("link_by_link.txt");
-			 printWriter = new PrintWriter(fileWriter);
-
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+    
     	
+       initialization();
     	
        unvisited.add(new Pair<String,String>("https://www.youtube.com/","no parent"));
        unvisited.add(new Pair<String,String>("https://www.tutorialspoint.com","no parent"));
@@ -444,6 +336,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
        unvisited.add(new Pair<String,String>("https://www.facebook.com/","no parent"));
        
      
+      
+       
        TimerTask timerTask = new TimerTask() {
 
            @Override
@@ -452,7 +346,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                counter++;
                write_links_toDb();
   			 
-  		       write_unvisited_toDb();
+  		      write_unvisited_toDb();
            }
        };
 
@@ -480,6 +374,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 		
 		
 		insert_map_in_db();
+		
+		
 		try {
 	    	
 	    	 System.out.println("printing in file");
@@ -489,7 +385,12 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			 fileWriter_url = new FileWriter("file_unvisited.txt");
 			 printWriter_url = new PrintWriter(fileWriter_url);
 			 
-			
+			 fileWriter_url_re = new FileWriter("file_unvisited_re.txt");
+			 printWriter_url_re = new PrintWriter(fileWriter_url_re);
+			 
+			 //for check only 
+			 write_links_tofile();
+			 write_unvisited_tofile();
 			
 			
 		     
@@ -498,41 +399,76 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			e.printStackTrace();
 		}
 	    
-	
 		
-	    printWriter.close();
+		printWriter.close();
 	    printWriter_url.close();
+	
+	   // while(true)
+	   // {
+	   
 	    links.clear();
 	    unvisited.clear();
-
-            
+	    
+	    timerTask.cancel();
+	    
+	    before_recrawl();
+	    
+	    timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
+	       
+	    try {
+       	 
+        	System.out.println("i am recrawling....");
+			recrawl();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  
+			
+	//    }
+	    
+       
     }
 	private void write_unvisited_toDb() {
 		// TODO Auto-generated method stub
 		DBCollection collection = database.getCollection("unvisited_links");
-    	BasicDBObject url = new BasicDBObject();
+    	BasicDBObject url;
     	
     	BasicDBObject document = new BasicDBObject();
 
     	// Delete All documents from collection Using blank BasicDBObject
     	collection.remove(document);
     	
-    	for(Pair<String,String> anObject : unvisited){
-    	    //do someting to anObject...
-			 url.put("link_name", anObject.getLeft());
-			 url.put("parent_name", anObject.getRight());
-			 collection.insert(url);
-		}
+    	
+
+        int unvisited_size = unvisited.size();
+    	
+    	for(int i=0;i<unvisited_size;i++) {
     		
-    
-		
+    		url = new BasicDBObject();
+    		Pair<String,String> top = unvisited.poll();
+    		
+    		if(top.getLeft()!=null && top.getRight()!=null)
+			 {
+				url.put("link_name", top.getLeft());
+				url.put("parent_name", top.getRight());
+				collection.insert(url);
+			 }
+    		
+    		unvisited.add(top);
+    	}
+
+    	
 		
 	}
 	private void write_links_toDb() {
 		// TODO Auto-generated method stub
 		
 		DBCollection collection = database.getCollection("visited_links");
-    	BasicDBObject url = new BasicDBObject();
+    	BasicDBObject url ;
     	
     	BasicDBObject document = new BasicDBObject();
 
@@ -542,17 +478,14 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	ArrayList<String> array;
          for (String key : links.keySet()) {
     		
-        	 if(key!=null&&key.length()!=0)
+        	 url = new BasicDBObject();
         	 url.put("link_name", key);
-        	 else
-        		 continue;
+        	
         	 array = new ArrayList<String>();
     		for(String value: links.get(key)) {
-    			
-    			if(value!=null&&value.length()!=0)
+    		
     			array.add(value);
-    			else
-    				continue;
+    			
     		}
     		url.put("parent_links",array);
     		
@@ -562,6 +495,333 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 	}
    
     
+    public void initialization()
+    {
+    	DBCollection collection = database.getCollection("visited_links");
     
+    			//get the id of the parent url by its name and selects only the field url_name to return
+        DBCursor cursor = collection.find();
+    			
+    			
+    	while(cursor.hasNext()) {
+    				
+    			BasicDBObject object = (BasicDBObject) cursor.next();
+    		    String link_name = object.getString("link_name");
+    		    
+    		    
+    		    Vector<ObjectId> parent_links_id=(Vector<ObjectId>) object.get("parent_links");
+    		    
+    		    Vector<String> parent_links=new Vector<String>();
+    		    for(ObjectId parent: parent_links_id)
+    		    {
+                DBCursor cursor2 = collection.find(new BasicDBObject("_id", parent),new BasicDBObject("url_name",1));
+    			
+    			
+    			while(cursor2.hasNext()) {
+    				//System.out.println("only one parent at a time for "+ key);
+    				BasicDBObject object2= (BasicDBObject) cursor2.next();
+    			    parent_links.add(object2.getString("url_name"));
+    			}
+    		    }
+ 
+    		    links.put(link_name,parent_links);
+    		     
+    	}
+    	
+    	DBCollection collection2 = database.getCollection("unvisited_links");
+         
+		//get the id of the parent url by its name and selects only the field url_name to return
+         DBCursor cursor2 = collection2.find();
+		
+		
+           while(cursor2.hasNext()) {
+			
+		   BasicDBObject object2 = (BasicDBObject) cursor2.next();
+	       String link_name = object2.getString("link_name");
+	       String parent_name = object2.getString("parent_name");
+	       unvisited.add(new Pair<String,String>(link_name,parent_name));
+    			    
+          }
+     }
+    
+     public void before_recrawl()
+     {
+    	 
+    	 DBCollection collection = database.getCollection("url");
+    	    
+    	 BasicDBObject searchQuery = new BasicDBObject().append("pr", new BasicDBObject("$gt",60));
+			//get the id of the parent url by its name and selects only the field url_name to return
+         DBCursor cursor = collection.find(searchQuery);
+         
+         while(cursor.hasNext()) {
+ 			
+  		   BasicDBObject object = (BasicDBObject) cursor.next();
+  	       String link_name = object.getString("url_name");
+  	       
+  	       unvisited.add(new Pair<String,String>(link_name,"no parent"));
+  	       
+         }
+     	
+         
+       
+         DBCollection collection2 = database.getCollection("unvisited_links");
+         
+ 		//get the id of the parent url by its name and selects only the field url_name to return
+          DBCursor cursor2 = collection2.find().limit(40);
+ 		
+ 		
+            while(cursor2.hasNext()) {
+ 			
+ 		   BasicDBObject object2 = (BasicDBObject) cursor2.next();
+ 	       String link_name = object2.getString("link_name");
+ 	       String parent_name = object2.getString("parent_name");
+ 	       unvisited.add(new Pair<String,String>(link_name,parent_name));
+     			    
+           }
+            
+           write_unvisited_tofile_re();
+         
+         
+		  
+     }
+     
+     public void  recrawl() throws IOException, TransformerException
+     {
+    	 DBCollection collection = database.getCollection("url");
+    	 while(!unvisited.isEmpty())
+    	 {
+    		 //Find only almost 100 websites.
+             if(links.size()>200)return;
+            
+             
+    		 Pair<String,String> url=unvisited.poll();
+    		 
+    		 
+    		 //is url exist in db
+    	
+    	    DBCursor cursor = collection.find(new BasicDBObject("url_name", url.getLeft()));
+    	    			
+  
+    	     if(cursor.hasNext()) {
+    	    	//yes url in db
+    	    		
+    	       
+    	    	BasicDBObject object = (BasicDBObject) cursor.next();
+    	    	
+    	    	Vector<ObjectId> parent_ids=(Vector<ObjectId>) object.get("in_links_id");
+    	    	
+    	    	//is_par_exist in db
+    	    	DBCursor cursor_par = collection.find(new BasicDBObject("url_name", url.getRight()));
+    	    	 if(cursor_par.hasNext()) {
+    	    		 BasicDBObject object2 = (BasicDBObject) cursor_par.next();
+    	    	 if(!parent_ids.contains(object2.getObjectId("_id")))
+    	    	 {
+    	    		 //push in db as a parent for this url anma lw kan mawgod f5las
+    	    		 BasicDBObject newDocument = new BasicDBObject();
+    	    		 newDocument.append("$push", new BasicDBObject().append("in_links_id", object2.getObjectId("_id") ));  //to be added to in_links_id
 
+    	    		 //BasicDBObject searchQuery = new BasicDBObject().append("url_name", url.getLeft());
+
+    	    		 collection.update(object, newDocument);
+    	    		 
+    	    	 }
+    	    	 }
+    	    	 
+    	    	 
+    	        String doc_from_db= object.getString("document");
+    	        Document new_document = Jsoup.connect(url.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
+                
+            	if(!doc_from_db.equals(new_document.toString()))
+            	{
+            		//there is a change in document
+            		
+            		 delete_url_and_childs_fromDB(url.getLeft());
+            	    
+            		 parse_and_insert_while_crawling(url,new_document,true);
+            	}
+            	
+    	     }
+    	     else
+    	     {
+    	    	 //url not in db
+    	    	
+    	    	 parse_and_insert_while_crawling(url,null,false);
+    	     }
+    	    			    
+    		 
+    	 }
+     }
+     
+     private void parse_and_insert_while_crawling(Pair<String, String> URL, Document document,boolean true_doc) throws TransformerException {
+		// TODO Auto-generated method stub
+    	 
+    	 
+    		
+    	 boolean ok = false;
+         URL url = null;
+         BufferedReader br = null;
+         
+         
+         //keeps polling until reaches a correct link with no problems
+         while(!ok){ 
+             try{
+                 url = new URL(URL.getLeft());
+                 br = new BufferedReader(new InputStreamReader(url.openStream()));
+                 ok = true;
+             }catch(MalformedURLException e){
+                 System.out.println("\nMalformedURL : "+URL.getLeft()+"\n");
+                 //Get next URL from queue
+                 if(!unvisited.isEmpty())
+                 {
+                URL =  unvisited.poll();
+                 ok = false;
+                 }
+                 else return;
+                
+             }catch(IOException e){
+                 System.out.println("\nIOException for URL : "+URL+"\n");
+                 //Get next URL from queue
+                 if(!unvisited.isEmpty())
+                 {
+                 URL =  unvisited.poll();
+                 ok = false;
+                 }
+                 else return;
+             }
+         }     
+         
+         
+     	//checks the robots.txt allowance
+     	boolean is_allowed=read_robot(URL.getLeft());
+    
+     	//URL.getRight() will return the url itself 
+     	String parent=URL.getRight();
+     	String parent_embed=URL.getLeft();
+     	
+     	// used in merge function it is called when the key already exists and we need to update its value
+     	BiFunction<Vector<String>, Vector<String>, Vector<String>> reMappingFunction = (Vector<String> oldvec, Vector<String> newvec) -> {
+     		Vector<String> temp = new Vector<String>();
+             temp.addAll(oldvec);
+            
+             if(!temp.contains(parent))
+             { 
+       	     temp.add(parent); 
+             }
+             else temp.add("same parent");
+             return temp;
+         };
+         
+         
+         BiFunction<Vector<String>, Vector<String>, Vector<String>> reMappingFunction2 = (Vector<String> oldvec, Vector<String> newvec) -> {
+     		Vector<String> temp = new Vector<String>();
+             temp.addAll(oldvec);
+            
+             if(!temp.contains(parent_embed))
+             { 
+       	     temp.add(parent_embed); 
+             }
+             else temp.add("same parent");
+             return temp;
+         };
+         
+        
+         //initial value of the map key (the first parent) it is used in the merge function
+         Vector<String> initial=new Vector<String>();
+         initial.add(URL.getRight());
+     	 
+         
+         //merge function checks if the key exists if yes calls remapping function if no adds the key with the initial value
+         //merge returns the value of the key specified(1st param.)
+         if (is_allowed &&(links.merge(URL.getLeft(),initial ,reMappingFunction)).size()==1) {
+         	
+         	
+                 
+                 try {
+                 	
+                	 if(!true_doc)
+                     document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
+                  
+                     Elements linksOnPage = document.select("a[href]");
+                     Elements linksOnPage2 = document.select("iframe");
+                   
+                     //printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n'); ---????
+                     
+                     insert_url_in_db(URL.getLeft(),document.toString(),linksOnPage.size()+linksOnPage2.size());
+                     send_to_indexer(new URL(URL.getLeft()),document);
+                     
+                     
+                     //5. For each extracted URL... go back to Step 4.
+                     for (Element page : linksOnPage2) {
+                     	
+               
+                     	Vector<String> initial2=new Vector<String>();
+                         initial2.add(URL.getLeft());  //ana al parent bta3hom
+                     
+                     	if((links.merge(page.attr("src"),initial2 ,reMappingFunction2)).size()==1&&page.attr("src").contains("/embed")&&page.attr("src").contains("youtube"))
+                     	{
+                     		//Document document_video = Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
+                              
+                     		//0 out_links as doesn't matter
+                     		//a3takd al document bta3 al parent ahm laan da i_frame
+                     	    insert_url_in_db(page.attr("src"),document.toString(),0);
+                     	    send_to_indexer(new URL(page.attr("src")),document);
+                             
+                     	}
+                     }
+                     
+                   
+                     for (Element page : linksOnPage) {
+                      //   getPageLinks(page.attr("abs:href"),URL);
+                         unvisited.add(new Pair<String,String>(page.attr("abs:href"),URL.getLeft()));
+                     
+                    
+                         
+                     }
+                     
+                  
+                 } catch (IOException e) {
+                     System.err.println("For '" + URL + "': " + e.getMessage());
+                 }catch(UncheckedIOException e) {
+                 	System.err.println("For '" + URL + "': " + e.getMessage());
+             	}
+             	
+         	
+         	
+   
+         }
+        
+		
+	}
+	public void delete_url_and_childs_fromDB(String url)
+     {      DBCollection collection = database.getCollection("url");
+    		DBCursor cursor = collection.find(new BasicDBObject("url_name",  url),new BasicDBObject("url_name",1));
+    		
+			
+			while(cursor.hasNext()) {
+				
+			     BasicDBObject object = (BasicDBObject) cursor.next();
+			 
+			     //this function deletes from table(word) from all the rows the value heba from array in_links_id
+			    	// db.student.update( { "subjects" : "maths" }, { $pull: { "subjects": "maths" }} );
+			   
+			    	
+			    BasicDBObject query = new BasicDBObject("in_links_id", object.getObjectId("_id"));
+			    
+			    DBObject update_in_links_no = new BasicDBObject();
+			    update_in_links_no.put("$inc", new BasicDBObject("in_links_no",-1));
+			    collection.updateMulti(query,update_in_links_no);
+			    
+			    DBObject update = new BasicDBObject();
+			    update.put("$pull", new BasicDBObject("in_links_id",object.getObjectId("_id")));
+			    collection.updateMulti( query, update );
+			    
+			    
+			    //to remove the entire row of this url
+			    BasicDBObject document = new BasicDBObject();
+			    document.put("url_name", url);
+			    collection.remove(document);
+			}
+    	
+       
+     }
 }
