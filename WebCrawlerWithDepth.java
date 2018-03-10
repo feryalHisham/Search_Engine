@@ -163,12 +163,21 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
   //prints the queue that contains each unvisited url with its parent url
     public static void write_unvisited_tofile() {
     
-    while(!unvisited.isEmpty())
-    {
+   
     	
-        printWriter_url.print(unvisited.poll().getLeft()+" parent "+unvisited.poll().getLeft()+'\n');
-       		
-    }
+    	 int unvisited_size = unvisited.size();
+     	
+     	for(int i=0;i<unvisited_size;i++) {
+     		
+     		BasicDBObject url = new BasicDBObject();
+     		Pair<String,String> top = unvisited.poll();
+     		
+     	    printWriter_url.print(top.getLeft()+" parent "+top.getLeft()+'\n');
+     	       
+     		
+     		unvisited.add(top);
+     	}
+   
    
     }
 
@@ -431,13 +440,27 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 	   // while(true)
 	   // {
 	   
+	    timer.cancel();
+	    
 	    links.clear();
 	    unvisited.clear();
 	    
-	    timerTask.cancel();
-	    
+	   
 	    before_recrawl();
 	    
+	   timer = new Timer("MyTimer");//create a new Timer
+
+	   timerTask = new TimerTask() {
+
+           @Override
+           public void run() {
+               System.out.println("TimerTask executing counter is: " + counter);
+               counter++;
+               write_links_toDb();
+  			 
+  		      write_unvisited_toDb();
+           }
+       };
 	    timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
 	       
 	    try {
