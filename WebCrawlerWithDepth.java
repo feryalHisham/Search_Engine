@@ -45,6 +45,7 @@ import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
 import com.google.common.base.CharMatcher;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -71,6 +72,9 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     static MongoClient mongoClient ;
 	static DB database ;
 	
+	Timer timer;
+	TimerTask timerTask;
+	
 	 int counter=0;
 	 static int priority=0;
 	//concurrent queue for synch.
@@ -90,6 +94,8 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
 		
 	}
     public WebCrawlerWithDepth() {
@@ -372,7 +378,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
      
       
        
-       TimerTask timerTask = new TimerTask() {
+      timerTask = new TimerTask() {
 
            @Override
            public void run() {
@@ -381,10 +387,13 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
                write_links_toDb();
   			 
   		      write_unvisited_toDb();
+  		      
+  		      
            }
+  			    
        };
 
-       Timer timer = new Timer("MyTimer");//create a new Timer
+       timer = new Timer("MyTimer");//create a new Timer
 
        timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
        
@@ -432,51 +441,54 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		// while(true)
+		   // {
+		   
+		    timer.cancel();
+		    
+		    links.clear();
+		    unvisited.clear();
+		    
+		   
+		    before_recrawl();
+		    
+		   timer = new Timer("MyTimer");//create a new Timer
+
+		   timerTask = new TimerTask() {
+
+	           @Override
+	           public void run() {
+	               System.out.println("TimerTask executing counter is: " + counter);
+	               counter++;
+	               write_links_toDb();
+	  			 
+	  		      write_unvisited_toDb();
+	           }
+	       };
+		    timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
+		       
+		    try {
+	       	 
+	        	System.out.println("i am recrawling....");
+				recrawl();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (TransformerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}  
+				
+ 
+		//    }
 	    
 		
 		printWriter.close();
 	    printWriter_url.close();
 	
-	   // while(true)
-	   // {
-	   
-	    timer.cancel();
-	    
-	    links.clear();
-	    unvisited.clear();
-	    
-	   
-	    before_recrawl();
-	    
-	   timer = new Timer("MyTimer");//create a new Timer
-
-	   timerTask = new TimerTask() {
-
-           @Override
-           public void run() {
-               System.out.println("TimerTask executing counter is: " + counter);
-               counter++;
-               write_links_toDb();
-  			 
-  		      write_unvisited_toDb();
-           }
-       };
-	    timer.scheduleAtFixedRate(timerTask, 0, 3000);//this line starts the timer at the same time its executed
-	       
-	    try {
-       	 
-        	System.out.println("i am recrawling....");
-			recrawl();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (TransformerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}  
-			
-	//    }
+	  
 	    
        
     }
@@ -557,22 +569,37 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     		    String link_name = object.getString("link_name");
     		    
     		    
-    		    Vector<ObjectId> parent_links_id=(Vector<ObjectId>) object.get("parent_links");
-    		    
-    		    Vector<String> parent_links=new Vector<String>();
-    		    for(ObjectId parent: parent_links_id)
-    		    {
-                DBCursor cursor2 = collection.find(new BasicDBObject("_id", parent),new BasicDBObject("url_name",1));
-    			
-    			
-    			while(cursor2.hasNext()) {
-    				//System.out.println("only one parent at a time for "+ key);
-    				BasicDBObject object2= (BasicDBObject) cursor2.next();
-    			    parent_links.add(object2.getString("url_name"));
-    			}
-    		    }
- 
-    		    links.put(link_name,parent_links);
+               BasicDBList parent_ids=(BasicDBList) object.get("in_links_id");
+               Vector<ObjectId> parent_links_id = null;
+     	    	if(parent_ids==null )
+     	    		System.out.println("parent_ids rage3 b null................\n");
+     	    	
+     	    	else {
+     	        Iterator<Object> it = parent_ids.iterator();
+     	        parent_links_id = new  Vector<ObjectId>();
+     	        while (it.hasNext()) {
+     	            ObjectId tid = (ObjectId) it.next();
+     	           parent_links_id.add(tid);
+     	        }
+     	        
+     	       Vector<String> parent_links=new Vector<String>();
+   		    for(ObjectId parent: parent_links_id)
+   		    {
+               DBCursor cursor2 = collection.find(new BasicDBObject("_id", parent),new BasicDBObject("url_name",1));
+   			
+   			
+   			while(cursor2.hasNext()) {
+   				//System.out.println("only one parent at a time for "+ key);
+   				BasicDBObject object2= (BasicDBObject) cursor2.next();
+   			    parent_links.add(object2.getString("url_name"));
+   			}
+   		    }
+
+   		    links.put(link_name,parent_links);
+   		    
+     	    }
+     	        
+    		
     		     
     	}
     	
@@ -660,27 +687,46 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	    	//yes url in db
     	    		
     	       
-    	    	BasicDBObject object = (BasicDBObject) cursor.next();
-    	    	
-    	    	Vector<ObjectId> parent_ids=(Vector<ObjectId>) object.get("in_links_id");
-    	    	
-    	    	//is_par_exist in db
-    	    	DBCursor cursor_par = collection.find(new BasicDBObject("url_name", url.getRight()));
-    	    	 if(cursor_par.hasNext()) {
-    	    		 BasicDBObject object2 = (BasicDBObject) cursor_par.next();
-    	    	 if(!parent_ids.contains(object2.getObjectId("_id")))
-    	    	 {
-    	    		 //push in db as a parent for this url anma lw kan mawgod f5las
-    	    		 BasicDBObject newDocument = new BasicDBObject();
-    	    		 newDocument.append("$push", new BasicDBObject().append("in_links_id", object2.getObjectId("_id") ));  //to be added to in_links_id
+    	    	System.out.println("link is in DB................\n");
+     	    	BasicDBObject object = (BasicDBObject) cursor.next();
+     	    	
+     	    	BasicDBList parent_ids=(BasicDBList) object.get("in_links_id");
+     	    	
+     	    	if(parent_ids==null )
+     	    		System.out.println("parent_ids rage3 b null................\n");
+     	    	
+     	    	else {
+     	        Iterator<Object> it = parent_ids.iterator();
+     	        Vector<ObjectId> parent_ids_list = new  Vector<ObjectId>();
+     	        while (it.hasNext()) {
+     	            ObjectId tid = (ObjectId) it.next();
+     	            parent_ids_list.add(tid);
+     	        }
+     	    	
+     	    	
+     	    	//is_par_exist in db
+     	    	DBCursor cursor_par = collection.find(new BasicDBObject("url_name", url.getRight()));
+     	    	 if(cursor_par.hasNext()) {
+     	    		 BasicDBObject object2 = (BasicDBObject) cursor_par.next();
+     	    	 if(!parent_ids_list.contains(object2.getObjectId("_id")))
+     	    	 {
+     	    		 System.out.println("i am not contains");
+     	    		 //push in db as a parent for this url anma lw kan mawgod f5las
+     	    		 BasicDBObject newDocument = new BasicDBObject();
+     	    		 newDocument.append("$push", new BasicDBObject().append("in_links_id", object2.getObjectId("_id") ));  //to be added to in_links_id
 
-    	    		 //BasicDBObject searchQuery = new BasicDBObject().append("url_name", url.getLeft());
+     	    		 //BasicDBObject searchQuery = new BasicDBObject().append("url_name", url.getLeft());
 
-    	    		 collection.update(object, newDocument);
-    	    		 
-    	    	 }
-    	    	 }
-    	    	 
+     	    		DBObject update_in_links_no = new BasicDBObject();
+     			    update_in_links_no.put("$inc", new BasicDBObject("in_links_no",1));
+     			     collection.update(object,update_in_links_no);
+     			    
+     	    		 collection.update(object, newDocument);
+     	    		 
+     	    	 }
+     	    	 }
+     	    	 
+     	    	}
     	    	 
     	        String doc_from_db= object.getString("document");
     	        Document new_document = Jsoup.connect(url.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
