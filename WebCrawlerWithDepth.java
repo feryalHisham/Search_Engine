@@ -1,4 +1,4 @@
-package web_crawler_try;
+
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,6 +45,7 @@ import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
 import com.google.common.base.CharMatcher;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -53,7 +54,6 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.trigonic.jrobotx.RobotExclusion;
 import mpi.*;
-
 
 public class WebCrawlerWithDepth implements Runnable,Serializable {
       //public static HashSet<String> links= new HashSet<>();
@@ -352,7 +352,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	
     	try {
 			mongoClient = new MongoClient();
-		    database = mongoClient.getDB("search_engine");
+		    database = mongoClient.getDB("SE2");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -557,8 +557,21 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     		    String link_name = object.getString("link_name");
     		    
     		    
-    		    Vector<ObjectId> parent_links_id=(Vector<ObjectId>) object.get("parent_links");
+    		    //Vector<ObjectId> parent_links_id=(Vector<ObjectId>) object.get("parent_links");
     		    
+    		    BasicDBList parent_ids=(BasicDBList) object.get("parent_links");
+    		    Vector<ObjectId> parent_links_id = new  Vector<ObjectId>();
+    	    	if(parent_ids==null )
+    	    		System.out.println("parent_links rage3 b null................\n");
+    	    	
+    	    	else {
+    	        Iterator<Object> it = parent_ids.iterator();
+    	        
+    	        while (it.hasNext()) {
+    	            ObjectId tid = (ObjectId) it.next();
+    	            parent_links_id.add(tid);
+    	        }  
+    	    	
     		    Vector<String> parent_links=new Vector<String>();
     		    for(ObjectId parent: parent_links_id)
     		    {
@@ -575,7 +588,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     		    links.put(link_name,parent_links);
     		     
     	}
-    	
+    	}
     	DBCollection collection2 = database.getCollection("unvisited_links");
          
 		//get the id of the parent url by its name and selects only the field url_name to return
@@ -659,17 +672,30 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	     if(cursor.hasNext()) {
     	    	//yes url in db
     	    		
-    	       
+    	    	System.out.println("link is in DB................\n");
     	    	BasicDBObject object = (BasicDBObject) cursor.next();
     	    	
-    	    	Vector<ObjectId> parent_ids=(Vector<ObjectId>) object.get("in_links_id");
+    	    	BasicDBList parent_ids=(BasicDBList) object.get("in_links_id");
+    	    	
+    	    	if(parent_ids==null )
+    	    		System.out.println("parent_ids rage3 b null................\n");
+    	    	
+    	    	else {
+    	        Iterator<Object> it = parent_ids.iterator();
+    	        Vector<ObjectId> parent_ids_list = new  Vector<ObjectId>();
+    	        while (it.hasNext()) {
+    	            ObjectId tid = (ObjectId) it.next();
+    	            parent_ids_list.add(tid);
+    	        }
+    	    	
     	    	
     	    	//is_par_exist in db
     	    	DBCursor cursor_par = collection.find(new BasicDBObject("url_name", url.getRight()));
     	    	 if(cursor_par.hasNext()) {
     	    		 BasicDBObject object2 = (BasicDBObject) cursor_par.next();
-    	    	 if(!parent_ids.contains(object2.getObjectId("_id")))
+    	    	 if(!parent_ids_list.contains(object2.getObjectId("_id")))
     	    	 {
+    	    		 System.out.println("parent gdeeeeeed");
     	    		 //push in db as a parent for this url anma lw kan mawgod f5las
     	    		 BasicDBObject newDocument = new BasicDBObject();
     	    		 newDocument.append("$push", new BasicDBObject().append("in_links_id", object2.getObjectId("_id") ));  //to be added to in_links_id
@@ -681,7 +707,7 @@ public class WebCrawlerWithDepth implements Runnable,Serializable {
     	    	 }
     	    	 }
     	    	 
-    	    	 
+    	    	}
     	        String doc_from_db= object.getString("document");
     	        Document new_document = Jsoup.connect(url.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
                 
