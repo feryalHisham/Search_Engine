@@ -317,6 +317,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 				}
 			}
 
+			/*
 			//to get the real object from db
 			DBCursor cursor2 = collection.find(searchQuery);
 			BasicDBObject object2 = null;
@@ -334,7 +335,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		           
 				collection.update(searchQuery, update);
 			}
-			
+			*/
 		}
 	}
 
@@ -358,7 +359,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 			url.put("document", d);
 			url.put("out_links_no", out_links);
-			url.put("in_links_no", 0);
+			//url.put("in_links_no", 0);
 
 			collection.insert(url);
 		} else {
@@ -487,6 +488,8 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		
 
 		System.out.println("the End..............................");
+		links.clear();
+		unvisited.clear();
 		printWriter.close();
 		printWriter_url.close();
 		timer.cancel();
@@ -567,10 +570,8 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 			BasicDBList parent_ids = (BasicDBList) object.get("in_links_id");
 			Vector<ObjectId> parent_links_id = null;
-			if (parent_ids == null)
-				System.out.println("parent_ids rage3 b null................\n");
-
-			else {
+			if (parent_ids != null)
+				 {
 				Iterator<Object> it = parent_ids.iterator();
 				parent_links_id = new Vector<ObjectId>();
 				while (it.hasNext()) {
@@ -708,7 +709,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 							// BasicDBObject().append("url_name",
 							// url.getLeft());
 
-					
+					        /*
 							DBObject update_in_links_no = new BasicDBObject();
 							
 							if(parent_ids!=null)
@@ -719,6 +720,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 							collection.update(object, update_in_links_no);
 							
 							}
+							*/
 
 							
 
@@ -890,10 +892,11 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 			BasicDBObject query = new BasicDBObject("in_links_id", object.getObjectId("_id"));
 
+			/*
 			DBObject update_in_links_no = new BasicDBObject();
 			update_in_links_no.put("$inc", new BasicDBObject("in_links_no", -1));
 			collection.updateMulti(query, update_in_links_no);
-
+            */
 			DBObject update = new BasicDBObject();
 			update.put("$pull", new BasicDBObject("in_links_id", object.getObjectId("_id")));
 			collection.updateMulti(query, update);
