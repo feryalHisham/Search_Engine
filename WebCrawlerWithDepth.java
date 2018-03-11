@@ -385,6 +385,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 	public void start_crawler() throws InterruptedException {
 
+		long startTime = System.nanoTime();
 		try {
 			mongoClient = new MongoClient();
 			database = mongoClient.getDB("search_engine3");
@@ -463,7 +464,10 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 	    links.clear();
 		unvisited.clear();
-
+		
+		long endCrawlerTime   = System.nanoTime();
+        System.out.println("time after crawling--->"+(endCrawlerTime-startTime));
+		
 		before_recrawl();
 		System.out.println("i am recrawling....");
 
@@ -488,6 +492,10 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		
 
 		System.out.println("the End..............................");
+	
+        System.out.println("time between crawling and reclawling--->"+(System.nanoTime()-endCrawlerTime));
+        System.out.println("total time--->"+(System.nanoTime()-startTime));
+
 		links.clear();
 		unvisited.clear();
 		printWriter.close();
