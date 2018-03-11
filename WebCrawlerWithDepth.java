@@ -846,8 +846,8 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 					Vector<String> initial2 = new Vector<String>();
 					initial2.add(URL.getLeft()); // ana al parent bta3hom
 
-					if ((links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1
-							&& page.attr("src").contains("/embed") && page.attr("src").contains("youtube")) {
+					if ((page.attr("src").contains("/embed") && page.attr("src").contains("youtube")
+							&&(links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1)) {
 						// Document document_video =
 						// Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
 
