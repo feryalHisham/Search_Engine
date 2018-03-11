@@ -57,7 +57,7 @@ public class indexer implements Serializable{
 		    database = mongoClient.getDB("search_engine3");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			//e1.printStackTrace();
 		}
 		
 		while(true) {
@@ -86,7 +86,7 @@ public class indexer implements Serializable{
 		 // System.out.println("url_from_crawler ----> "+url_from_crawler.toString());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		} finally {
 		  try {
 		    if (in != null) {

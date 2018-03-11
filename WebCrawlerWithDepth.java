@@ -83,25 +83,25 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		System.out.println("thread no---->"+Integer.parseInt(Thread.currentThread().getName()));
+		//System.out.println("thread no---->"+Integer.parseInt(Thread.currentThread().getName()));
 		if(Integer.parseInt(Thread.currentThread().getName())<=no_of_threads)
 		{
-			System.out.println("now crawl----");
+			//System.out.println("now crawl----");
 			
 		try {
 			// getPageLinks(start_url, 0,"no parent");
 			crawl();
 		} catch (TransformerException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		}
 		else
 		{
-			System.out.println("now recrawl----");
+			//System.out.println("now recrawl----");
 			
 			try {
 
@@ -109,10 +109,10 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 			
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//e.printStackTrace();
 			} catch (TransformerException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 
@@ -147,7 +147,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		} catch (MalformedURLException e1) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			//e1.printStackTrace();
 		}
 
 		BufferedReader in;
@@ -235,7 +235,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		} finally {
 			try {
 				bos_url.close();
@@ -395,7 +395,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		try {
 
-			System.out.println("printing in file");
+			//System.out.println("printing in file");
 			fileWriter = new FileWriter("file_links.txt");
 
 			printWriter = new PrintWriter(fileWriter);
@@ -409,7 +409,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 
 		initialization();
@@ -675,7 +675,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 			if (cursor.hasNext()) {
 				// yes url in db
 
-				System.out.println("link is in DB................\n");
+				//System.out.println("link is in DB................\n");
 				BasicDBObject object = (BasicDBObject) cursor.next();
 
 				BasicDBList parent_ids = (BasicDBList) object.get("in_links_id");
@@ -694,7 +694,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 					if (cursor_par.hasNext()) {
 						BasicDBObject object2 = (BasicDBObject) cursor_par.next();
 						if (!parent_ids_list.contains(object2.getObjectId("_id"))) {
-							System.out.println("i am not contains");
+							//System.out.println("i am not contains");
 							// push in db as a parent for this url anma lw kan
 							// mawgod f5las
 							BasicDBObject newDocument = new BasicDBObject();
@@ -766,7 +766,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 				br = new BufferedReader(new InputStreamReader(url.openStream()));
 				ok = true;
 			} catch (MalformedURLException e) {
-				System.out.println("\nMalformedURL : " + URL.getLeft() + "\n");
+				//System.out.println("\nMalformedURL : " + URL.getLeft() + "\n");
 				// Get next URL from queue
 				if (!unvisited.isEmpty()) {
 					URL = unvisited.poll();
@@ -775,7 +775,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 					return;
 
 			} catch (IOException e) {
-				System.out.println("\nIOException for URL : " + URL + "\n");
+				//System.out.println("\nIOException for URL : " + URL + "\n");
 				// Get next URL from queue
 				if (!unvisited.isEmpty()) {
 					URL = unvisited.poll();
@@ -868,9 +868,9 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 				}
 
 			} catch (IOException e) {
-				System.err.println("For '" + URL + "': " + e.getMessage());
+				//System.err.println("For '" + URL + "': " + e.getMessage());
 			} catch (UncheckedIOException e) {
-				System.err.println("For '" + URL + "': " + e.getMessage());
+				//System.err.println("For '" + URL + "': " + e.getMessage());
 			}
 
 		}
