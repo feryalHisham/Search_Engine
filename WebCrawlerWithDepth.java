@@ -1,4 +1,4 @@
-package web_crawler_try;
+
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -219,7 +219,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 	// uses MPI to send the URLs to the indexer
 	// the indexer will receive this url and read its corresponding document
 	// from the DB
-	public void send_to_indexer(URL url, Document d) throws TransformerException, IOException {
+	public void send_to_indexer(URL url, Document d,int crawling) throws TransformerException, IOException {
 
 		// Prepare bytes to send
 		byte[] yourBytes_url = null;
@@ -247,7 +247,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		// send the url after it's document inserted in db
 		// write_document(url.toString(), d);
-		MPI.COMM_WORLD.Send(yourBytes_url, 0, yourBytes_url.length, MPI.BYTE, 1, 0);
+		MPI.COMM_WORLD.Send(yourBytes_url, 0, yourBytes_url.length, MPI.BYTE, 1, crawling);
 
 	}
 
@@ -269,7 +269,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 			
 				
 
-			parse_and_insert_while_crawling(URL, null, false);
+			parse_and_insert_while_crawling(URL, null, false,0);
 		}
 
 		
@@ -388,7 +388,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		long startTime = System.nanoTime();
 		try {
 			mongoClient = new MongoClient();
-			database = mongoClient.getDB("search_engine3");
+			database = mongoClient.getDB("search_engine6");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -398,7 +398,6 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 			//System.out.println("printing in file");
 			fileWriter = new FileWriter("file_links.txt");
-
 			printWriter = new PrintWriter(fileWriter);
 			fileWriter_url = new FileWriter("file_unvisited.txt");
 			printWriter_url = new PrintWriter(fileWriter_url);
@@ -745,13 +744,13 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 					delete_url_childs_fromDB(url.getLeft());
 
-					parse_and_insert_while_crawling(url, new_document, true);
+					parse_and_insert_while_crawling(url, new_document, true,1);
 				}
 
 			} else {
 				// url not in db
 
-				parse_and_insert_while_crawling(url, null, false);
+				parse_and_insert_while_crawling(url, null, false,1);
 			}
 
 		}
@@ -759,7 +758,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		
 	}
 
-	private void parse_and_insert_while_crawling(Pair<String, String> URL, Document document, boolean true_doc)
+	private void parse_and_insert_while_crawling(Pair<String, String> URL, Document document, boolean true_doc,int crawling)
 			throws TransformerException {
 		// TODO Auto-generated method stub
 
@@ -848,7 +847,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 				// ---????
 
 				insert_url_in_db(URL.getLeft(), document.toString(), linksOnPage.size() + linksOnPage2.size());
-				send_to_indexer(new URL(URL.getLeft()), document);
+				send_to_indexer(new URL(URL.getLeft()), document,crawling);
 
 				// 5. For each extracted URL... go back to Step 4.
 				for (Element page : linksOnPage2) {
@@ -864,7 +863,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 						// 0 out_links as doesn't matter
 						// a3takd al document bta3 al parent ahm laan da i_frame
 						insert_url_in_db(page.attr("src"), document.toString(), 0);
-						send_to_indexer(new URL(page.attr("src")), document);
+						send_to_indexer(new URL(page.attr("src")), document,crawling);
 
 					}
 				}
