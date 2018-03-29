@@ -17,6 +17,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
+import javax.xml.transform.TransformerException;
+
 import mpi.*;
 
 public class indexer implements Serializable,Runnable{
@@ -30,6 +32,7 @@ public class indexer implements Serializable,Runnable{
 	 boolean first=true;
 	 long startTime;
 	 int no_of_threads;
+	 static Request req;
 	public indexer(int n)
 	{
 		no_of_threads=n;
@@ -55,6 +58,10 @@ public class indexer implements Serializable,Runnable{
 		}
 	
 		
+		/*int[] end=new int[1];
+		
+		req=MPI.COMM_WORLD.Irecv(end, 0, 1, MPI.INT,0,0);*/
+		
 		Object o=new Object();
 		Thread[] threads = new Thread[no_of_threads];
 		for (Integer i = 1; i <= no_of_threads; i++) {
@@ -75,6 +82,7 @@ public class indexer implements Serializable,Runnable{
 	
 		
 	}
+
 
 	public void recv_from_crawler() throws ClassNotFoundException
     {
@@ -180,7 +188,7 @@ public class indexer implements Serializable,Runnable{
 	        }
 	
 			// System.out.println("time indexer for one doc--->"+(System.nanoTime()-startTime));
-		    System.out.println("total time indexing--->"+(System.nanoTime()-startTime));
+		    //System.out.println("total time indexing--->"+(System.nanoTime()-startTime));
 
 		}
 		

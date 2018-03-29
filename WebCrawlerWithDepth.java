@@ -255,6 +255,17 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		}*/
 		
 	}
+	
+	public void send_to_indexer_end() throws TransformerException, IOException {
+
+
+		int[] end=new int[1];
+		end[0]=5;
+		MPI.COMM_WORLD.Send(end, 0, 1, MPI.INT, 1,0);
+        
+	
+		
+	}
 
 	/*
 	 * BFS Routine that: 1.pops the unvisited links form the queue (unvisited)
@@ -446,6 +457,17 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 														// time its executed
 														 
 														 */
+		
+		Runtime.getRuntime().addShutdownHook(new Thread()
+	    {
+	      public void run()
+	      {
+	        System.out.println("Shutdown Hook is running !");
+	        write_links_toDb();
+
+			write_unvisited_toDb();
+	      }
+	    });
 
 		Thread[] threads = new Thread[no_of_threads];
 		for (Integer i = 1; i <= no_of_threads; i++) {
@@ -496,7 +518,16 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		//}
 		
+		System.out.println("the End of crawler waitt..............................");
 
+		try {
+			send_to_indexer_end();
+		} catch (TransformerException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 		System.out.println("the End of crawler..............................");
 	
         System.out.println("time between crawling and reclawling--->"+(System.nanoTime()-endCrawlerTime));

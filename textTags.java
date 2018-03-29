@@ -59,13 +59,13 @@ public class textTags {
 
             MongoClient mongoClient = new MongoClient("localhost", 27017);
             db = mongoClient.getDB("search_engine5");
-            System.out.println("Connected to Database");
+            //System.out.println("Connected to Database");
 
 
         } catch (Exception e) {
             System.out.println(e);
         }
-        System.out.println("Server is ready ");
+        //System.out.println("Server is ready ");
         DBCollection collection = db.getCollection("wordsIndex");
        // collection.createIndex();
 
@@ -101,7 +101,7 @@ public class textTags {
        
             DBObject update = new BasicDBObject();
             update.put("$pull", q3);
-            System.out.println(update);
+           // System.out.println(update);
             collection.updateMulti(i3,update);
     		
 
