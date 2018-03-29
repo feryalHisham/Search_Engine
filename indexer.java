@@ -19,59 +19,75 @@ import java.net.UnknownHostException;
 
 import mpi.*;
 
-public class indexer implements Serializable{
+public class indexer implements Serializable,Runnable{
 	
 	 static MongoClient mongoClient ;
 	 static DB database ;
-	 
+	 Object lock;
 	 URL url;
 	 Document d;
 	 boolean is_Recrawling=false;
 	 boolean first=true;
-	 
-	public indexer()
+	 long startTime;
+	 int no_of_threads;
+	public indexer(int n)
 	{
-		
+		no_of_threads=n;
+	}
+	public indexer(Object o)
+	{
+		lock=o;
 	}
 	
+
 	public void start_indexer() throws ClassNotFoundException{
 		
-		
-		
+		startTime = System.nanoTime();
 		
 		try {
 			mongoClient = new MongoClient();
-		    database = mongoClient.getDB("search_engine6");
+		    database = mongoClient.getDB("search_engine5");
 		} catch (MongoException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-
-		while(true) {
-			recv_from_crawler();
-			try{
-				
-				System.out.println("url from crawler 2--->"+url.toString());
-                textTags.indexing(d,url.toString(),is_Recrawling);
-            }catch (IOException e){
-			    System.out.println(e);
-            }
-
+	
+		
+		Object o=new Object();
+		Thread[] threads = new Thread[no_of_threads];
+		for (Integer i = 1; i <= no_of_threads; i++) {
+			Thread t1 = new Thread(new indexer(o));
+			t1.setName(i.toString());
+			t1.start();
+			threads[i - 1] = t1;
 		}
+	
+		for (int i = 0; i < threads.length; i++)
+			try {
+				threads[i].join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+	
 		
 	}
+
 	public void recv_from_crawler() throws ClassNotFoundException
     {
 		//i think hn7tag nbreak 
 		
-		byte[] yourBytes_url= new byte[10000];
-		int document_size=0;
 		
-		Document doc_from_crawler=null;
+		byte[] yourBytes_url= new byte[10000];
+		
+		
+	
 		//10000 is assumed to be max url size
 		Status status=MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,MPI.ANY_TAG);
+	    System.out.println("now indexer start........");
 		
 		if(status.tag==1)
 		{
@@ -109,7 +125,7 @@ public class indexer implements Serializable{
 		
 		
 	
-		get_document_from_db();
+		//get_document_from_db();
 		
     }
 
@@ -135,7 +151,43 @@ public class indexer implements Serializable{
 		
 	}
 
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+         while(true) {
+			
+	
+        	 
+			synchronized(lock)
+			{
+				try {
+					recv_from_crawler();
+					System.out.println("url from crawler 2--->"+url.toString()+ " thread---> "+Thread.currentThread().getName());
+
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+			}
+	
+			try{
+				
+				get_document_from_db();
+	            textTags.indexing(d,url.toString(),is_Recrawling);
+	        }catch (IOException e){
+			    System.out.println(e);
+	        }
+	
+			// System.out.println("time indexer for one doc--->"+(System.nanoTime()-startTime));
+		    System.out.println("total time indexing--->"+(System.nanoTime()-startTime));
+
+		}
+		
+	}
+	}
+
 	
 	
 
-}
+

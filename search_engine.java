@@ -24,7 +24,7 @@ public class search_engine {
 		else if(rank==1)
 		{
 			//indexer
-			indexer my_indexer= new indexer();
+			indexer my_indexer= new indexer(5);
 			
 			my_indexer.start_indexer();
 

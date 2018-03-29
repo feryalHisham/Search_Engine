@@ -1,5 +1,3 @@
-
-
 import com.mongodb.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -60,7 +58,7 @@ public class textTags {
         try {
 
             MongoClient mongoClient = new MongoClient("localhost", 27017);
-            db = mongoClient.getDB("search_engine6");
+            db = mongoClient.getDB("search_engine5");
             System.out.println("Connected to Database");
 
 

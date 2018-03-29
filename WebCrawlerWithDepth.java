@@ -247,8 +247,13 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		// send the url after it's document inserted in db
 		// write_document(url.toString(), d);
-		MPI.COMM_WORLD.Send(yourBytes_url, 0, yourBytes_url.length, MPI.BYTE, 1, crawling);
-
+		Request request = MPI.COMM_WORLD.Isend(yourBytes_url, 0, yourBytes_url.length, MPI.BYTE, 1, crawling);
+        
+		/*if(request.Test().Test_cancelled())
+		{
+			System.out.println("request cancelled...");
+		}*/
+		
 	}
 
 	/*
@@ -388,7 +393,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		long startTime = System.nanoTime();
 		try {
 			mongoClient = new MongoClient();
-			database = mongoClient.getDB("search_engine6");
+			database = mongoClient.getDB("search_engine5");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -420,7 +425,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		unvisited.add(new Pair<String, String>("https://dzone.com", "no parent"));
 		unvisited.add(new Pair<String, String>("https://www.facebook.com/", "no parent"));
 
-		timerTask = new TimerTask() {
+		/*timerTask = new TimerTask() {
 
 			@Override
 			public void run() {
@@ -439,6 +444,8 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		timer.scheduleAtFixedRate(timerTask, 0, 3000);// this line starts the
 														// timer at the same
 														// time its executed
+														 
+														 */
 
 		Thread[] threads = new Thread[no_of_threads];
 		for (Integer i = 1; i <= no_of_threads; i++) {
@@ -452,8 +459,8 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 			threads[i].join();
 		
 		insert_map_in_db();
-		write_links_tofile();
-		write_unvisited_tofile();
+		//write_links_tofile();
+		//write_unvisited_tofile();
 		
 		
 		System.out.println("size of links after crawl-->"+WebCrawlerWithDepth.links.size());
@@ -490,16 +497,17 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		//}
 		
 
-		System.out.println("the End..............................");
+		System.out.println("the End of crawler..............................");
 	
         System.out.println("time between crawling and reclawling--->"+(System.nanoTime()-endCrawlerTime));
-        System.out.println("total time--->"+(System.nanoTime()-startTime));
-
+        System.out.println("total time crawling--->"+(System.nanoTime()-startTime));
+ 
+        
 		links.clear();
 		unvisited.clear();
 		printWriter.close();
 		printWriter_url.close();
-		timer.cancel();
+		//timer.cancel();
 
 	}
 
