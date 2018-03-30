@@ -1,20 +1,39 @@
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 
 import java.util.*;
 
-public class DatabaseComm {
+public class DatabaseComm{
 
-//    public String url;
-    public int occurence;
-    public Map<String, Integer > wordtags;
+     int occurence;
+     String tag;
+     String theWord;
+     List<Integer> positions;
+     Map<String, Integer > wordtags;
+
+//    final static String[] neededTags={"p","pre","span","li","h1","h2", "h3", "h4", "h5", "h6"};
 
 
+    public void addPosition(int pos) {
+
+        positions.add(pos);
+        ++occurence;
+    }
+
+
+    public List<Integer> getPositions() {
+        return positions;
+    }
 
     public DatabaseComm(){
-        wordtags=new HashMap<String,Integer >();
+//        wordtags=new HashMap<String,Integer >();
+        positions=new ArrayList<Integer>();
         occurence=0;
+        tag=new String();
+        tag="p";
+
     }
 
     public int getOccurence() {
@@ -35,6 +54,28 @@ public class DatabaseComm {
                 wordtags.put(tag,1);
 
     }
+    public List<BasicDBObject> getTagOccurrences(){
 
+        List<BasicDBObject> occurrence = new ArrayList<>();
+        for (Map.Entry<String, Integer> tagsOccur : wordtags.entrySet()) {
 
+            BasicDBObject occurenceTag = new BasicDBObject();
+            occurenceTag.put("tagName", tagsOccur.getKey());
+            occurenceTag.put("numOccur", tagsOccur.getValue());
+            occurrence.add(occurenceTag);
+
+        }
+        return  occurrence;
+
+    }
+    public String getTag(){
+
+        return tag;
+
+    }
+    public String changeTag(){
+
+        return tag="h";
+
+    }
 }

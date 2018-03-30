@@ -21,6 +21,8 @@ public class stopwords {
     static Set<String> stopwords,citation;
 public stopwords(){
     stopwords=new HashSet<String>();
+
+    citation = new HashSet<String>();
 //    System.out.println(words.length);
     for (String word:words){
      stopwords.add(word);
