@@ -1,36 +1,23 @@
 
 /*
-
    Porter stemmer in Java. The original paper is in
-
        Porter, 1980, An algorithm for suffix stripping, Program, Vol. 14,
        no. 3, pp 130-137,
-
    See also http://www.tartarus.org/~martin/PorterStemmer
-
    History:
-
    Release 1
-
    Bug 1 (reported by Gonzalo Parra 16/10/99) fixed as marked below.
    The words 'aed', 'eed', 'oed' leave k at 'a' for step 3, and b[k-1]
    is then out outside the bounds of b.
-
    Release 2
-
    Similarly,
-
    Bug 2 (reported by Steve Dyrdahl 22/2/00) fixed as marked below.
    'ion' by itself leaves j = -1 in the test for 'ion' in step 5, and
    b[j] is then outside the bounds of b.
-
    Release 3
-
    Considerably revised 4/9/00 in the light of many helpful suggestions
    from Brian Goetz of Quiotix Corporation (brian@quiotix.com).
-
    Release 4
-
 */
 
 import java.io.*;
@@ -126,7 +113,6 @@ class Stemmer
    /* m() measures the number of consonant sequences between 0 and j. if c is
       a consonant sequence and v a vowel sequence, and <..> indicates arbitrary
       presence,
-
          <c><v>       gives 0
          <c>vc<v>     gives 1
          <c>vcvc<v>   gives 2
@@ -177,10 +163,8 @@ class Stemmer
    /* cvc(i) is true <=> i-2,i-1,i has the form consonant - vowel - consonant
       and also if the second c is not w,x or y. this is used when trying to
       restore an e at the end of a short word. e.g.
-
          cav(e), lov(e), hop(e), crim(e), but
          snow, box, tray.
-
    */
 
     private final boolean cvc(int i)
@@ -215,25 +199,20 @@ class Stemmer
     private final void r(String s) { if (m() > 0) setto(s); }
 
    /* step1() gets rid of plurals and -ed or -ing. e.g.
-
           caresses  ->  caress
           ponies    ->  poni
           ties      ->  ti
           caress    ->  caress
           cats      ->  cat
-
           feed      ->  feed
           agreed    ->  agree
           disabled  ->  disable
-
           matting   ->  mat
           mating    ->  mate
           meeting   ->  meet
           milling   ->  mill
           messing   ->  mess
-
           meetings  ->  meet
-
    */
 
     private final void step1()
