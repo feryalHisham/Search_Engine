@@ -20,6 +20,7 @@ import java.net.UnknownHostException;
 import javax.xml.transform.TransformerException;
 
 import mpi.*;
+import mpjbuf.TypeMismatchException;
 
 public class indexer implements Serializable,Runnable{
 
@@ -99,8 +100,15 @@ public class indexer implements Serializable,Runnable{
 
 
 		//10000 is assumed to be max url size
-		Status status=MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,MPI.ANY_TAG);
-	    System.out.println("now indexer start........");
+		Status status = null;
+		try{
+		status=MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,MPI.ANY_TAG);
+		}
+		catch(MPIException e)
+		{
+			
+		}
+	   // System.out.println("now indexer start........");
 
 		if(status.tag==1)
 		{
