@@ -15,13 +15,13 @@ import java.util.*;
 
 public class textTags2 {
 
-    public stopwords checkStopWord;
+    public static stopwords checkStopWord;
     //final static String[] neededTags={"h1","h2", "h3", "h4", "h5", "h6"};
-    public dbModel runIndexerMap;
+    dbModel runIndexerMap;
     dbInterface dataToDB;
-    textTags2(){
+    textTags2(DB database){
         runIndexerMap=new dbModel();
-        dataToDB= new dbInterface("search_engine5","WordsIndex");
+        dataToDB= new dbInterface("WordsIndex",database);
     }
 
 
@@ -29,11 +29,9 @@ public class textTags2 {
 
     public  void indexing(Document doc,String url,boolean isRecrawling)throws IOException{
 
-    	dbModel runIndexerMap=new dbModel();
 
         String innerBody=doc.select("body").text();
 
-        
         runIndexerMap.addHeaderWords(doc);
         Queue<String> wordsofURL= new LinkedList<>(Arrays.asList(innerBody.split(" ")));
         int i=0;

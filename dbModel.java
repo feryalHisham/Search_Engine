@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class dbModel {
-    public Map<String,Map<String,DatabaseComm>> urlStemmedWords;
+     Map<String,Map<String,DatabaseComm>> urlStemmedWords;
 
 
-    stopORstem modifier;
+     stopORstem modifier;
     final String[] neededTags={"h1","h2", "h3", "h4", "h5", "h6"};
 
 
@@ -64,6 +64,7 @@ public class dbModel {
 
         //Stemming
         String stemmedWord=modifier.modifyWord(originalWord,"p");
+        
         if(stemmedWord==null)
             return;
         if(urlStemmedWords.containsKey(stemmedWord)) {
@@ -87,8 +88,5 @@ public class dbModel {
         return urlStemmedWords;
     }
 
-    public void setUrlStemmedWords(Map<String, Map<String, DatabaseComm>> urlStemmedWords) {
-       this.urlStemmedWords = urlStemmedWords;
 
-    }
 }
