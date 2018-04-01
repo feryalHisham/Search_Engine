@@ -76,7 +76,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 	int counter = 0;
 	static int priority = 0;
 	static int count_map=0;
-	static int max_links = 500;
+	static int max_links = 200;
 	// concurrent queue for synch.
 	// queue of pair of url and its parent url
 	public static ConcurrentLinkedQueue<Pair<String, String>> unvisited = new ConcurrentLinkedQueue<Pair<String, String>>();
@@ -979,9 +979,10 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 					get_doc=true;
 			}
 			
-			if(get_doc)
-			{
-				try {
+			
+			try {
+				
+				if(get_doc)
 					document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
 					
 					synchronized(lock)
@@ -1063,7 +1064,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 	
 		}
 
-	}
+	
 
 	public void delete_url_childs_fromDB(String url) {
 		DBCollection collection = database.getCollection("url");
