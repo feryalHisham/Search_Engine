@@ -76,7 +76,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 	int counter = 0;
 	static int priority = 0;
 	static int count_map=0;
-	static int max_links = 200;
+	static int max_links = 500;
 	// concurrent queue for synch.
 	// queue of pair of url and its parent url
 	public static ConcurrentLinkedQueue<Pair<String, String>> unvisited = new ConcurrentLinkedQueue<Pair<String, String>>();
@@ -972,78 +972,95 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		if (is_allowed ) {
 			boolean enter=false;
 			
+			boolean get_doc=false;
 			synchronized(lock)
 			{
-			if( (links.merge(URL.getLeft(), initial, reMappingFunction)).size() == 1)
-			{
-				enter=true;
-				count_map++;
+				if (!true_doc&&!links.contains(URL.getLeft()))
+					get_doc=true;
 			}
-			}
-				
-
-			if(enter)
+			
+			if(get_doc)
 			{
-			try {
-
-				if (!true_doc)
+				try {
 					document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
-
-				Elements linksOnPage = document.select("a[href]");
-				Elements linksOnPage2 = document.select("iframe");
-
-				// printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n');
-				// ---????
-
-				insert_url_in_db(URL.getLeft(), document.toString(), linksOnPage.size() + linksOnPage2.size());
-				send_to_indexer(new URL(URL.getLeft()), document, crawling);
-
-				// 5. For each extracted URL... go back to Step 4.
-				for (Element page : linksOnPage2) {
-
-					Vector<String> initial2 = new Vector<String>();
-					initial2.add(URL.getLeft()); // ana al parent bta3hom
-
-					if ((page.attr("src").contains("/embed") && page.attr("src").contains("youtube")
-							)) {
+					
+					synchronized(lock)
+					{
 						
-						boolean enter2=false;
-						
-						synchronized(lock)
-						{
-							if((links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1)
-								{
-								enter2=true;
-								count_map++;
-								
-								}
-						}
-						// Document document_video =
-						// Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
-
-						// 0 out_links as doesn't matter
-						// a3takd al document bta3 al parent ahm laan da i_frame
-						if(enter2)
-						{
-						insert_url_in_db(page.attr("src"), document.toString(), 0);
-						send_to_indexer(new URL(page.attr("src")), document, crawling);
-						}
+					  if( (links.merge(URL.getLeft(), initial, reMappingFunction)).size() == 1)
+					  {
+						enter=true;
+						count_map++;
+					  }
 					}
+						
+
+					if(enter)
+					{
+					
+						//if (!true_doc)
+						//	document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
+
+						Elements linksOnPage = document.select("a[href]");
+						Elements linksOnPage2 = document.select("iframe");
+
+						// printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n');
+						// ---????
+
+						insert_url_in_db(URL.getLeft(), document.toString(), linksOnPage.size() + linksOnPage2.size());
+						send_to_indexer(new URL(URL.getLeft()), document, crawling);
+
+						// 5. For each extracted URL... go back to Step 4.
+						for (Element page : linksOnPage2) {
+
+							Vector<String> initial2 = new Vector<String>();
+							initial2.add(URL.getLeft()); // ana al parent bta3hom
+
+							if ((page.attr("src").contains("/embed") && page.attr("src").contains("youtube")
+									)) {
+								
+								boolean enter2=false;
+								
+								synchronized(lock)
+								{
+									if((links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1)
+										{
+										enter2=true;
+										count_map++;
+										
+										}
+								}
+								// Document document_video =
+								// Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
+
+								// 0 out_links as doesn't matter
+								// a3takd al document bta3 al parent ahm laan da i_frame
+								if(enter2)
+								{
+								insert_url_in_db(page.attr("src"), document.toString(), 0);
+								send_to_indexer(new URL(page.attr("src")), document, crawling);
+								}
+							}
+						}
+
+						for (Element page : linksOnPage) {
+							// getPageLinks(page.attr("abs:href"),URL);
+							unvisited.add(new Pair<String, String>(page.attr("abs:href"), URL.getLeft()));
+
+						}
+
+					
+
 				}
+					
+				} catch (IOException e) {
+					  System.err.println("For '" + URL + "': " + e.getMessage());
+					} catch (UncheckedIOException e) {
+					 System.err.println("For '" + URL + "': " + e.getMessage());
+					}
 
-				for (Element page : linksOnPage) {
-					// getPageLinks(page.attr("abs:href"),URL);
-					unvisited.add(new Pair<String, String>(page.attr("abs:href"), URL.getLeft()));
-
-				}
-
-			} catch (IOException e) {
-				// System.err.println("For '" + URL + "': " + e.getMessage());
-			} catch (UncheckedIOException e) {
-				// System.err.println("For '" + URL + "': " + e.getMessage());
 			}
-
-		}
+	
 		}
 
 	}
