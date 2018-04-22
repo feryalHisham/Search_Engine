@@ -862,83 +862,28 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 		// merge function checks if the key exists if yes calls remapping
 		// function if no adds the key with the initial value
 		// merge returns the value of the key specified(1st param.)
-<<<<<<< HEAD:src/WebCrawlerWithDepth.java
 		if (is_allowed && (links.merge(URL.getLeft(), initial, reMappingFunction)).size() == 1) {
 
 			try {
-=======
-		if (is_allowed ) {
-			boolean enter=false;
-			
-			boolean get_doc=false;
-			synchronized(lock)
-			{
-				if (!true_doc&&!links.contains(URL.getLeft()))
-					get_doc=true;
-			}
-			
-			
-			try {
-				
-				if(get_doc)
+
+				if (!true_doc)
 					document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
-					
-					synchronized(lock)
-					{
-						
-					  if( (links.merge(URL.getLeft(), initial, reMappingFunction)).size() == 1)
-					  {
-						enter=true;
-						count_map++;
-					  }
-					}
-						
 
-					if(enter)
-					{
-					
-						//if (!true_doc)
-						//	document = Jsoup.connect(URL.getLeft()).ignoreContentType(true).userAgent("Mozilla").get();
->>>>>>> acb2225721a00d5c74b25c7a51628cfbf808c00c:WebCrawlerWithDepth.java
+				Elements linksOnPage = document.select("a[href]");
+				Elements linksOnPage2 = document.select("iframe");
 
-						Elements linksOnPage = document.select("a[href]");
-						Elements linksOnPage2 = document.select("iframe");
+				// printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n');
+				// ---????
 
-						// printWriter.print(URL.getLeft()+(linksOnPage.size()+linksOnPage2.size())+'\n');
-						// ---????
-
-						insert_url_in_db(URL.getLeft(), document.toString(), linksOnPage.size() + linksOnPage2.size());
-						send_to_indexer(new URL(URL.getLeft()), document, crawling);
-
-<<<<<<< HEAD:src/WebCrawlerWithDepth.java
 				insert_url_in_db(URL.getLeft(), document.toString(), linksOnPage.size() + linksOnPage2.size());
 				send_to_indexer(new URL(URL.getLeft()), document,crawling);
-=======
-						// 5. For each extracted URL... go back to Step 4.
-						for (Element page : linksOnPage2) {
->>>>>>> acb2225721a00d5c74b25c7a51628cfbf808c00c:WebCrawlerWithDepth.java
 
-							Vector<String> initial2 = new Vector<String>();
-							initial2.add(URL.getLeft()); // ana al parent bta3hom
+				// 5. For each extracted URL... go back to Step 4.
+				for (Element page : linksOnPage2) {
 
-							if ((page.attr("src").contains("/embed") && page.attr("src").contains("youtube")
-									)) {
-								
-								boolean enter2=false;
-								
-								synchronized(lock)
-								{
-									if((links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1)
-										{
-										enter2=true;
-										count_map++;
-										
-										}
-								}
-								// Document document_video =
-								// Jsoup.connect(page.attr("src")).ignoreContentType(true).userAgent("Mozilla").get();
+					Vector<String> initial2 = new Vector<String>();
+					initial2.add(URL.getLeft()); // ana al parent bta3hom
 
-<<<<<<< HEAD:src/WebCrawlerWithDepth.java
 					if ((page.attr("src").contains("/embed") && page.attr("src").contains("youtube")
 							&&(links.merge(page.attr("src"), initial2, reMappingFunction2)).size() == 1)) {
 						// Document document_video =
@@ -951,48 +896,22 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 					}
 				}
-=======
-								// 0 out_links as doesn't matter
-								// a3takd al document bta3 al parent ahm laan da i_frame
-								if(enter2)
-								{
-								insert_url_in_db(page.attr("src"), document.toString(), 0);
-								send_to_indexer(new URL(page.attr("src")), document, crawling);
-								}
-							}
-						}
 
-						for (Element page : linksOnPage) {
-							// getPageLinks(page.attr("abs:href"),URL);
-							unvisited.add(new Pair<String, String>(page.attr("abs:href"), URL.getLeft()));
-
-						}
->>>>>>> acb2225721a00d5c74b25c7a51628cfbf808c00c:WebCrawlerWithDepth.java
-
-					
+				for (Element page : linksOnPage) {
+					// getPageLinks(page.attr("abs:href"),URL);
+					unvisited.add(new Pair<String, String>(page.attr("abs:href"), URL.getLeft()));
 
 				}
-					
-				} catch (IOException e) {
-					  System.err.println("For '" + URL + "': " + e.getMessage());
-					} catch (UncheckedIOException e) {
-					 System.err.println("For '" + URL + "': " + e.getMessage());
-					}
 
-<<<<<<< HEAD:src/WebCrawlerWithDepth.java
 			} catch (IOException e) {
 				//System.err.println("For '" + URL + "': " + e.getMessage());
 			} catch (UncheckedIOException e) {
 				//System.err.println("For '" + URL + "': " + e.getMessage());
 			}
 
-=======
-			}
-	
->>>>>>> acb2225721a00d5c74b25c7a51628cfbf808c00c:WebCrawlerWithDepth.java
 		}
 
-	
+	}
 
 	public void delete_url_childs_fromDB(String url) {
 		DBCollection collection = database.getCollection("url");

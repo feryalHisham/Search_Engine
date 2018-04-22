@@ -231,13 +231,12 @@ public class dbInterface {
             if(wordsList!=null){
                 Iterator<Object> wordsIterator= wordsList.iterator();
                 while (wordsIterator.hasNext()) {
-                    BasicDBObject wordObj =  wordsIterator.next();
-                    DatabaseComm originalWordStructure = new DatabaseComm
-                            (wordObj.get("tf"),
-                                    wordObj.get("tag"),
-                                    wordObj.get("originalWord"),
-                                    wordObj.get("positions"),
-                                    wordObj.get("url"));
+                    BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
+                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.getInteger(wordObj.get("tf").toString()),
+                                    wordObj.get("tag").toString(),
+                                    wordObj.get("originalWord").toString(),
+                            (List<Integer>) wordObj.get("positions"),
+                                    wordObj.get("url").toString());
 
                     originalWordsInfo.add(originalWordStructure);
                 }

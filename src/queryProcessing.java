@@ -3,20 +3,19 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class queryProcessing {
     String[] words;
     DB db = null;
     DBCollection collection;
-    static stemmingObj = new stopORstem();
-    static findInDB;
+    static stopORstem stemmingObj = new stopORstem();
+    static dbInterface findInDB;
     Map<String,Vector<DatabaseComm> > wordsToRanker;
 
     queryProcessing(String searchwords,String DBname, String DBCollection){
         words= searchwords.split(" ");
-        wordsToRanker=new Map<String,Vector<DatabaseComm> >;
+        wordsToRanker=new HashMap<>(); // Map<String,Vector<DatabaseComm> >();
         findInDB= new dbInterface(DBname,DBCollection);
             /*try {
 
@@ -37,7 +36,7 @@ public class queryProcessing {
 
         public Vector<DatabaseComm> retreive_stemmed_word_info(String word){
 
-           return Vector<DatabaseComm> originalWordsInfo = findInDB.findByStemmedWord( stemmingObj.stemWord(word));
+           return findInDB.findByStemmedWord( stemmingObj.stemWord(word));
 
         }
 
