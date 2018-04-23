@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.mongodb.BulkWriteError;
 import com.mongodb.util.JSON;
+import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
 import org.bson.*;
 import org.bson.types.ObjectId;
 
@@ -31,10 +32,30 @@ public class dbInterface {
         }
         System.out.println("Server is ready ");
         collection = db.getCollection(DBCollection);
-        BasicDBObject index= new BasicDBObject("stemmedWord",1);
-        collection.createIndex(index,null,true);
+        BasicDBObject index = new BasicDBObject("stemmedWord", 1);
+        collection.createIndex(index, null, true);
 
     }
+
+
+    dbInterface(String DBCollection, DB database) {
+        wordsFirstinserted = new LinkedList<>();
+
+        try {
+
+            //MongoClient mongoClient = new MongoClient("localhost", 27017);
+            db = database;
+            System.out.println("Connected to Database");
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        //System.out.println("Server is ready ");
+        collection = db.getCollection(DBCollection);
+        //collection.createIndex("stemmedWord");
+
+    }
+
 
     public void insertData(Map.Entry<String, DatabaseComm> originalWords, String url) {
         BasicDBObject toInsert = new BasicDBObject();
@@ -125,61 +146,61 @@ public class dbInterface {
         collection.update(b1, b4, false, true);
 
     }
+
     // Gets the ID from error msg from duplicate key exception
-    String findStemmedWord(String errormsg)
-    {
+    String findStemmedWord(String errormsg) {
         Matcher m = Pattern.compile("[\"]([^\"]*)[\"]").matcher(errormsg);  //("[0-9a-f]{24}")
         m.find();
-        return m.group().replace("\"","");
+        return m.group().replace("\"", "");
     }
 
 
-    void duplicateKeyHandler(MongoException e ){
+    void duplicateKeyHandler(MongoException e) {
 
-            int insertionListSize= wordsFirstinserted.size();
-            if(insertionListSize==0)
-                return;
-            String erroredStemmedWord=findStemmedWord(e.getMessage());
+        int insertionListSize = wordsFirstinserted.size();
+        if (insertionListSize == 0)
+            return;
+        String erroredStemmedWord = findStemmedWord(e.getMessage());
 
-            for (int i = 0; i < insertionListSize; ++i)  {
+        for (int i = 0; i < insertionListSize; ++i) {
 
-                if(wordsFirstinserted.getFirst().get("stemmedWord").equals(erroredStemmedWord))
-                {
+            if (wordsFirstinserted.getFirst().get("stemmedWord").equals(erroredStemmedWord)) {
 
-                        //TODO: CAll update for the held object and insert to the rest of the list
+                //TODO: CAll update for the held object and insert to the rest of the list
 
-                        //b7oto fe array b2a
-                        BasicDBObject tempisa = new BasicDBObject();
+                //b7oto fe array b2a
+                BasicDBObject tempisa = new BasicDBObject();
 
-                        String temp11 = wordsFirstinserted.getFirst().get("words").toString();
-                        String s1 = temp11.substring(1,temp11.length()-1);
+                String temp11 = wordsFirstinserted.getFirst().get("words").toString();
+                String s1 = temp11.substring(1, temp11.length() - 1);
 //                        System.out.println(s1);
-                        BasicDBObject dbObject =  (BasicDBObject) JSON.parse(s1);
+                BasicDBObject dbObject = (BasicDBObject) JSON.parse(s1);
 
 
-                        tempisa.put("$addToSet", new BasicDBObject().append("words",dbObject)); //mmkn tb2a $push
+                tempisa.put("$addToSet", new BasicDBObject().append("words", dbObject)); //mmkn tb2a $push
 
-                        collection.update(new BasicDBObject().append("stemmedWord", erroredStemmedWord),tempisa);
-                        wordsFirstinserted.removeFirst();
-                        try {
-                            if (wordsFirstinserted.equals(null))
-                                return;
-                            collection.insert(wordsFirstinserted);
-                        }catch (MongoException er){
-                            if (er.getCode() == 11000)
-                                duplicateKeyHandler(er);
-
-                        }
-                        break;
-
+                collection.update(new BasicDBObject().append("stemmedWord", erroredStemmedWord), tempisa);
+                wordsFirstinserted.removeFirst();
+                try {
+                    if (wordsFirstinserted.equals(null))
+                        return;
+                    collection.insert(wordsFirstinserted);
+                } catch (MongoException er) {
+                    if (er.getCode() == 11000)
+                        duplicateKeyHandler(er);
 
                 }
-//                System.out.println(wordsFirstinserted.getFirst().get("stemmedWord"));
+                break;
 
-                wordsFirstinserted.removeFirst();    // ftema 5awafaaaaaaaaaaaaa
 
             }
+//                System.out.println(wordsFirstinserted.getFirst().get("stemmedWord"));
+
+            wordsFirstinserted.removeFirst();    // ftema 5awafaaaaaaaaaaaaa
+
+        }
     }
+
     public void initDB(/*String DBname,String DBCollection,*/ Map<String, Map<String, DatabaseComm>> interConnection, String url, boolean recrawl) {
 
 
@@ -208,7 +229,7 @@ public class dbInterface {
         //System.out.println("----------->"+wordsFirstinserted);
         try {
             collection.insert(wordsFirstinserted);
-        }catch(MongoException e){
+        } catch (MongoException e) {
             if (e.getCode() == 11000)
                 duplicateKeyHandler(e);
 
@@ -218,27 +239,32 @@ public class dbInterface {
     }
 
 
-    public Vector<DatabaseComm>  findByStemmedWord(String stemmedWord){
+    public Vector<DatabaseComm> findByStemmedWord(String stemmedWord) {
+        //stemmedWord="mathematical";
         Vector<DatabaseComm> originalWordsInfo = new Vector<DatabaseComm>();
 
         BasicDBObject toFind = new BasicDBObject();
 
-        toFind.put("stemmedWord",stemmedWord );
-        DBCursor wordsFound= collection.find(toFind);
-        if(wordsFound.hasNext()){
-            BasicDBObject stemmedWordObj=(BasicDBObject) wordsFound.next();
-            BasicDBList  wordsList= (BasicDBList) stemmedWordObj.get("words");
-            if(wordsList!=null){
-                Iterator<Object> wordsIterator= wordsList.iterator();
+        toFind.put("stemmedWord", stemmedWord);
+        DBCursor wordsFound = collection.find(toFind);
+        //System.out.println("Words Found.length  ---> "+wordsFound.length());
+
+        //System.out.println("Words Found.next  ---> "+wordsFound.curr());
+        if (wordsFound.length() != 0) {
+            BasicDBObject stemmedWordObj = (BasicDBObject) wordsFound.curr();
+            BasicDBList wordsList = (BasicDBList) stemmedWordObj.get("words");
+            if (wordsList != null) {
+                Iterator<Object> wordsIterator = wordsList.iterator();
                 while (wordsIterator.hasNext()) {
                     BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
-                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.getInteger(wordObj.get("tf").toString()),
-                                    wordObj.get("tag").toString(),
-                                    wordObj.get("originalWord").toString(),
+                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
+                            wordObj.get("tag").toString(),
+                            wordObj.get("originalWord").toString(),
                             (List<Integer>) wordObj.get("positions"),
-                                    wordObj.get("url").toString());
+                            wordObj.get("url").toString());
 
                     originalWordsInfo.add(originalWordStructure);
+                    //System.out.println(originalWordsInfo.size());
                 }
 
             }
@@ -247,7 +273,52 @@ public class dbInterface {
         return originalWordsInfo;
 
     }
+
+    public Vector<String> findPhraseUrlIntersection(List<String> wordsToFind) {
+
+        Vector<DatabaseComm> originalWordsInfo = new Vector<DatabaseComm>();
+        Vector<String> urlIntersect = new Vector<String>();
+        BasicDBObject objectToFind = new BasicDBObject();
+        objectToFind.put("stemmedWord", new BasicDBObject("$in", wordsToFind));
+
+        DBCursor wordsFound = collection.find(objectToFind);
+
+        boolean firstVector=true;
+        Integer modifiedWordLen = wordsFound.length();
+        while (modifiedWordLen != 0) {
+            Vector<String> urlEachword = new Vector<String>();
+
+            BasicDBObject stemmedWordObj = (BasicDBObject) wordsFound.curr();
+            BasicDBList wordsList = (BasicDBList) stemmedWordObj.get("words");
+            if (wordsList != null) {
+                Iterator<Object> wordsIterator = wordsList.iterator();
+                while (wordsIterator.hasNext()) {
+                    BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
+                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
+                            wordObj.get("tag").toString(),
+                            wordObj.get("originalWord").toString(),
+                            (List<Integer>) wordObj.get("positions"),
+                            wordObj.get("url").toString());
+
+                    originalWordsInfo.add(originalWordStructure);
+
+                    if (wordsFound.hasNext())
+                        wordsFound.next();
+
+                    --modifiedWordLen;
+
+                }
+
+
+            }
+
+            if(firstVector)
+            {
+                urlIntersect.addAll(urlEachword);
+            }
+
+        }
+        return urlIntersect;
+    }
 }
-
-
 

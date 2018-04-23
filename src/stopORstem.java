@@ -25,7 +25,8 @@ public class stopORstem {
         //else that: Stem the word
 //        porterStemmer.add(word);
 //        porterStemmer.stem();
-        return stemWord(word);//porterStemmer.toString();
+        /////////////////////////////////******E7NA SHAYLEEEEEEN EL STEMMMER*********/////////////////////////////
+        return /*stemWord*/(word);//porterStemmer.toString();
 
     }
     public String prepareWord(String word){
