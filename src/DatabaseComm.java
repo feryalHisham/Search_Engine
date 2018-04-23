@@ -7,12 +7,20 @@ import java.util.*;
 public class DatabaseComm{
 
     int occurence;
+
+    public String getTheWord() {
+        return theWord;
+    }
+
     String tag;
     String theWord;
     List<Integer> positions;
     Map<String, Integer > wordtags;
     String url;
 
+    public String getUrl() {
+        return url;
+    }
 //    final static String[] neededTags={"p","pre","span","li","h1","h2", "h3", "h4", "h5", "h6"};
 
     public void addPosition(int pos) {

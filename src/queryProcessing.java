@@ -11,12 +11,13 @@ public class queryProcessing {
     DBCollection collection;
     static stopORstem stemmingObj = new stopORstem();
     static dbInterface findInDB;
-    Map<String,Vector<DatabaseComm> > wordsToRanker;
+    public Map<String,Vector<DatabaseComm> > wordsToRanker;
 
-    queryProcessing(String searchwords,String DBname, String DBCollection){
+    public queryProcessing(String searchwords){    //,String DBname, String DBCollection){
+
         words= searchwords.split(" ");
-        wordsToRanker=new HashMap<>(); // Map<String,Vector<DatabaseComm> >();
-        findInDB= new dbInterface(DBname,DBCollection);
+        wordsToRanker=new HashMap<>();
+        findInDB= new dbInterface("search_engine","wordsIndex");        //(DBname,DBCollection);
             /*try {
 
                 MongoClient mongoClient = new MongoClient("localhost", 27017);

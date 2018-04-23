@@ -7,7 +7,7 @@ public class stopORstem {
 
     public String modifyWord(String word,String tag){
 
-        Stemmer porterStemmer = new Stemmer();
+
 //        word=word.toLowerCase();
         prepareWord(word);
         //Check if Stop word
@@ -35,6 +35,7 @@ public class stopORstem {
     }
 
     public String stemWord(String word){
+        Stemmer porterStemmer = new Stemmer();
         prepareWord(word);
         porterStemmer.add(word);
         porterStemmer.stem();
