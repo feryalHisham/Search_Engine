@@ -274,50 +274,59 @@ public class dbInterface {
 
     }
 
-    public Vector<String> findPhraseUrlIntersection(List<String> wordsToFind) {
+    public Vector<String> findPhraseUrlIntersection(LinkedList<String> OriginalWordsToFind)  //,LinkedList<String> StemmedWordsToFind)
+    {
 
         Vector<DatabaseComm> originalWordsInfo = new Vector<DatabaseComm>();
         Vector<String> urlIntersect = new Vector<String>();
         BasicDBObject objectToFind = new BasicDBObject();
-        objectToFind.put("stemmedWord", new BasicDBObject("$in", wordsToFind));
+        objectToFind.put("stemmedWord", new BasicDBObject("$in", OriginalWordsToFind));
 
         DBCursor wordsFound = collection.find(objectToFind);
 
         boolean firstVector=true;
-        Integer modifiedWordLen = wordsFound.length();
+        Integer modifiedWordLen = wordsFound.size();  //***not length
         while (modifiedWordLen != 0) {
             Vector<String> urlEachword = new Vector<String>();
 
-            BasicDBObject stemmedWordObj = (BasicDBObject) wordsFound.curr();
-            BasicDBList wordsList = (BasicDBList) stemmedWordObj.get("words");
-            if (wordsList != null) {
-                Iterator<Object> wordsIterator = wordsList.iterator();
-                while (wordsIterator.hasNext()) {
-                    BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
-                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
-                            wordObj.get("tag").toString(),
-                            wordObj.get("originalWord").toString(),
-                            (List<Integer>) wordObj.get("positions"),
-                            wordObj.get("url").toString());
 
-                    originalWordsInfo.add(originalWordStructure);
+            //if (wordsFound.hasNext()) {
 
-                    if (wordsFound.hasNext())
-                        wordsFound.next();
+                BasicDBObject stemmedWordObj = (BasicDBObject) wordsFound.next();
+                BasicDBList wordsList = (BasicDBList) stemmedWordObj.get("words");
+                if (wordsList != null) {
+                    Iterator<Object> wordsIterator = wordsList.iterator();
+                    while (wordsIterator.hasNext()) {
+                        BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
+                        DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
+                                wordObj.get("tag").toString(),
+                                wordObj.get("originalWord").toString(),
+                                (List<Integer>) wordObj.get("positions"),
+                                wordObj.get("url").toString());
 
-                    --modifiedWordLen;
+                        if (OriginalWordsToFind.contains(wordObj.get("originalWord").toString())) {
+                            originalWordsInfo.add(originalWordStructure);
+                            urlEachword.add(wordObj.get("url").toString());
+                        }
+
+                    }
+
 
                 }
 
+                if (firstVector) {
+                    firstVector = false;
+                    urlIntersect.addAll(urlEachword);
+                } else {
+                    if (urlEachword.size() != 0) //e7tyaty bs mafrood eno dayman hla2y fe link at least feh el original word
+                        urlIntersect.retainAll(urlEachword);
+                }
 
-            }
 
-            if(firstVector)
-            {
-                urlIntersect.addAll(urlEachword);
-            }
-
+           // }
+            --modifiedWordLen;
         }
+
         return urlIntersect;
     }
 }
