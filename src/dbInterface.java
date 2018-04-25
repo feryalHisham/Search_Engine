@@ -246,10 +246,11 @@ public class dbInterface {
                 Iterator<Object> wordsIterator = wordsList.iterator();
                 while (wordsIterator.hasNext()) {
                     BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
+                    Set<Integer> positions_set = new HashSet<>((List<Integer>) wordObj.get("positions"));
                     DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
                             wordObj.get("tag").toString(),
                             wordObj.get("originalWord").toString(),
-                            (List<Integer>) wordObj.get("positions"),
+                            positions_set,
                             wordObj.get("url").toString());
 
                     originalWordsInfo.add(originalWordStructure);
@@ -290,10 +291,11 @@ public class dbInterface {
                 Iterator<Object> wordsIterator = wordsList.iterator();
                 while (wordsIterator.hasNext()) {
                     BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();   //Fatema
+                    Set<Integer> positions_set = new HashSet<>((List<Integer>) wordObj.get("positions"));
                     DatabaseComm originalWordStructure = new DatabaseComm(Integer.parseInt(wordObj.get("tf").toString()),
                             wordObj.get("tag").toString(),
                             wordObj.get("originalWord").toString(),
-                            (List<Integer>) wordObj.get("positions"),
+                            positions_set,
                             wordObj.get("url").toString());
 
                     if (OriginalWordsToFind.contains(wordObj.get("originalWord").toString())) {
@@ -354,30 +356,30 @@ public class dbInterface {
             // hwa akeed el  intersect mwgoood check malosh lazma
             if(wordsInfoObjects.containsKey(url)){
                 for (DatabaseComm wordsInfoOnURL : wordsInfoObjects.get(url)){
-                     //intersectionWordsInfo.addAll(wordsInfoObjects.get(url));
-                        String stemmedWordToMap = stemmerObject.stemWord(wordsInfoOnURL.theWord);
-                        // DA HANShEEEEEEELO lama nsala7 el stemmer**********
-                        stemmedWordToMap = wordsInfoOnURL.theWord;
-                        if (phraseSearchResultFromDB.containsKey(stemmedWordToMap)) {
+                    //intersectionWordsInfo.addAll(wordsInfoObjects.get(url));
+                    String stemmedWordToMap = stemmerObject.stemWord(wordsInfoOnURL.theWord);
+                    // DA HANShEEEEEEELO lama nsala7 el stemmer**********
+                    stemmedWordToMap = wordsInfoOnURL.theWord;
+                    if (phraseSearchResultFromDB.containsKey(stemmedWordToMap)) {
 
 
-                            phraseSearchResultFromDB.get(stemmedWordToMap).getRight().add(wordsInfoOnURL);
-
-                            }
-
-                        else{
-                            Vector<DatabaseComm> firstElement = new Vector<>();
-                            firstElement.add(wordsInfoOnURL);
-                            Pair<Integer,Vector<DatabaseComm>> firstElementPair=new Pair<>(originalWordsToFind.indexOf(stemmedWordToMap),firstElement);
-                            phraseSearchResultFromDB.put(stemmedWordToMap,firstElementPair);
-                        }
-
+                        phraseSearchResultFromDB.get(stemmedWordToMap).getRight().add(wordsInfoOnURL);
 
                     }
-            }
+
+                    else{
+                        Vector<DatabaseComm> firstElement = new Vector<>();
+                        firstElement.add(wordsInfoOnURL);
+                        Pair<Integer,Vector<DatabaseComm>> firstElementPair=new Pair<>(originalWordsToFind.indexOf(stemmedWordToMap),firstElement);
+                        phraseSearchResultFromDB.put(stemmedWordToMap,firstElementPair);
+                    }
 
 
                 }
+            }
+
+
+        }
 
 
         return;
