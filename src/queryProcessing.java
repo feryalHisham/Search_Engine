@@ -7,6 +7,8 @@ public class queryProcessing {
     static stopORstem stemmingObj = new stopORstem();
     static dbInterface findInDB;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> wordsToRanker;
+    public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseWordsToRanker;
+
 
     public queryProcessing(String searchwords){    //,String DBname, String DBCollection){
         //searchwords = " \" stack generalization \" ";
@@ -31,7 +33,7 @@ public class queryProcessing {
 
 
 
-            }
+    }
 
     public Vector<DatabaseComm> retreive_stemmed_word_info(String word){
         System.out.println("Searching for -->"+ word);
@@ -70,29 +72,34 @@ public class queryProcessing {
     public void doPhraseSearch(LinkedList<String> words){
 
         /*intersect query to get the documents that contains all the words
-        * get the word with min occurrence in each doc to start searching dor the rest of the phrase
-        */
+         * get the word with min occurrence in each doc to start searching for the rest of the phrase
+         */
         LinkedList<String> stemmedWords = new LinkedList<>();
         for(String word: words){
             stemmedWords.add(stemmingObj.stemWord(word));
         }
         Vector<String> urlsIntersected = findInDB.findPhraseUrlIntersection(words); //,stemmedWords); // mafrood asln hasearch 3la el stemmed fel DB
-        System.out.println("URL Intersect length --> "+urlsIntersected.size());
-        System.out.println(urlsIntersected);
+
+
         return;
 
     }
 
     public void preparePhrase(){
-
+        //search query words may conatian more than 2 double quotes
         int firstQuoteidx = words.indexOf("\"");
         int lastQuoteidx = words.lastIndexOf("\"");
         LinkedList<String> wordsBetweenQuotes = new LinkedList<>(words.subList(firstQuoteidx+1,lastQuoteidx)); //first index is inclusive second is exclusive
         doPhraseSearch(wordsBetweenQuotes);
+        phraseWordsToRanker=findInDB.phraseSearchResultFromDB;
+
 
         // remove from words el phrase kolha klmat w quotes
         words.subList(firstQuoteidx,lastQuoteidx+1).clear();
         //words.removeAll(Collections.singleton("\'"));
+        for(String word:wordsBetweenQuotes){
+            System.out.println("URL Vector in Map length --> "+phraseWordsToRanker.get(word).getRight().size());
+        }
 
         return;
     }
@@ -105,5 +112,5 @@ public class queryProcessing {
 * f2olt yb2a el afdal tb2a two maps 34an nb3at kol wa7da mostaqela w e7na lama neegy n show el results n7ot bta3et el phrase el awel
 * sa7 wla eh?? :D
 * bs gahzelna el map de b2a bta3et el phrase
-* 
+*
 * */
