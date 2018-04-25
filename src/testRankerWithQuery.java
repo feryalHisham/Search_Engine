@@ -8,7 +8,7 @@ public class testRankerWithQuery {
     public static void main(String[] args) {
 
 
-        String searchString= "nodes stack";
+        String searchString= "generalization mathematical ";
         processingQuery=new queryProcessing(searchString);
         processingQuery.retreiveSearchWordsInfo();
 

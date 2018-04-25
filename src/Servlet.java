@@ -15,70 +15,81 @@ public class Servlet extends HttpServlet {
     queryProcessing processingQuery;
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-            // Set response content type
-            response.setContentType("text/html");
-            String searchString=request.getParameter("searchWords");
-            processingQuery=new queryProcessing(searchString);
-            processingQuery.retreiveSearchWordsInfo();
-            System.out.println(searchString);
-            System.out.println("Ranker map --->   "+processingQuery.wordsToRanker.size());
-//            Vector<String> v = new Vector<>();
-//            v.add("a");
-//
-//            v.add("b");
-//            v.add("c");
-//
-//        Vector<String> v2 = new Vector<>();
-//        v2.addAll(v);
-//
-//        Vector<String> v3 = new Vector<>();
-//        v3.add("a");
-//
-//        v2.retainAll(v3);
-//        System.out.println(v2);
+        // Set response content type
+        response.setContentType("text/html");
+        String searchString=request.getParameter("searchWords");
+        processingQuery=new queryProcessing(searchString);
+        processingQuery.retreiveSearchWordsInfo();
+
+        System.out.println("size of map to ranker"+processingQuery.wordsToRanker+" "+processingQuery.phraseFinalToRanker);
+
+        PrintWriter out = response.getWriter();
+        String title = "Search Engine";
+        String docType =
+                "<!doctype html public \"-//w3c//dtd html 4.0 " +
+                        "transitional//en\">\n";
+
+        out.println(docType +
+                "<html>\n" +
+                "<head><title>" + title + "</title></head>\n" +
+                "<body bgcolor=\"#f0f0f0\">\n" +
+                "<h1 align=\"center\">" + title + "</h1>\n" );
 
 
-        for (Map.Entry<String,Pair<Integer,Vector<DatabaseComm>>> wordsInfoMapEntry: processingQuery.wordsToRanker.entrySet() ) {
+        Relevance_Ranker re_for_phrase_search;
+        Map<String,Pair<Double,Integer>> phrase_results = null;
+        if(processingQuery.phraseFinalToRanker!=null)
+        {
+            re_for_phrase_search=new Relevance_Ranker(processingQuery.phraseFinalToRanker);
+            phrase_results= re_for_phrase_search.get_pages_sorted_from_ranker_phrase();
 
-            System.out.println("word position --->   "+wordsInfoMapEntry.getValue().getLeft());
-
-            System.out.println("word vector --->   "+wordsInfoMapEntry.getValue().getRight().size());
-
-            //System.out.println("search query "+wordsInfoMapEntry.getKey());
-                /*for (  DatabaseComm  wordInfo :wordsInfoMapEntry.getValue()){
-                    System.out.println("info:");
-                    System.out.println("Original Word: "+wordInfo.getTheWord());
-                    System.out.println("URL: "+wordInfo.getUrl());
-                    System.out.println("TF "+wordInfo.getOccurence());
-                    System.out.println("Tag: "+wordInfo.getTag());
-                }*/
+            out.println( "<ul>\n" +
+                    "  <li><b>Phrase Results</b>:\n "
+                    +
+                    "</ul>\n" );
+            for(String url:phrase_results.keySet())
+            {
+                out.println( "<ul>\n" +
+                        "  <li>\n "
+                        + url + "\n" +
+                        "</ul>\n" );
 
             }
-//            PrintWriter out = response.getWriter();
-//            String title = "Search Engine";
-//            String docType =
-//                    "<!doctype html public \"-//w3c//dtd html 4.0 " +
-//                            "transitional//en\">\n";
-//            out.println(docType +
-//                    "<html>\n" +
-//                    "<head><title>" + title + "</title></head>\n" +
-//                    "<body bgcolor=\"#f0f0f0\">\n" +
-//                    "<h1 align=\"center\">" + title + "</h1>\n" +
-//                    "<ul>\n" +
-//                    "  <li><b>Search Words</b>: "
-//                    + searchString + "\n" +
-//                    "</ul>\n" +
-//                    "<ul>\n" +
-//
-//                    "  <li><b>Search Words</b>: "
-//                    + request.getParameter("searchWords") + "\n" +
-//                    "</ul>\n" +
-//                    "</body></html>");
+
+
+        }
+
+
+        Relevance_Ranker re_for_regular_words;
+        Map<String,Pair<Double,Integer>> regular_results=null;
+         if(processingQuery.wordsToRanker!=null)
+         {
+             re_for_regular_words=new Relevance_Ranker(processingQuery.wordsToRanker);
+             regular_results=re_for_regular_words.get_pages_sorted_from_ranker();
+
+             out.println( "<ul>\n" +
+                     "  <li><b>Regular Results</b>:\n "
+                   +
+                     "</ul>\n" );
+
+             for(String url:regular_results.keySet())
+             {
+                 out.println( "<ul>\n" +
+                         "  <li>\n "
+                         + url + "\n" +
+                         "</ul>\n" );
+
+
+             }
+         }
+
+
+
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try{
-        doGet(request, response);
+            doGet(request, response);
         }catch (Exception e){
 
             out.println(e);

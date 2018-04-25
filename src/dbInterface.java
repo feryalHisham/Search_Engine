@@ -7,9 +7,8 @@ import java.util.regex.Pattern;
 
 import com.mongodb.BulkWriteError;
 import com.mongodb.util.JSON;
-import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
-import org.bson.*;
-import org.bson.types.ObjectId;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import javax.xml.crypto.Data;
 
@@ -28,6 +27,27 @@ public class dbInterface {
         searchResultFromDB=new HashMap<>();
         phraseSearchResultFromDB=new HashMap<>();
         stemmerObject=new stopORstem();
+//
+//        try {
+//
+//            MongoClient mongoClient = new MongoClient("localhost", 27017);
+//            db = mongoClient.getDB(DBname);
+//            System.out.println("Connected to Database");
+//
+//        } catch (Exception e) {
+//            System.out.println(e);
+//        }
+//        System.out.println("Server is ready ");
+//        collection = db.getCollection(DBCollection);
+//        BasicDBObject index = new BasicDBObject("stemmedWord", 1);
+//        collection.createIndex(index, null, true);
+        connectDBCollection( DBname,  DBCollection);
+        BasicDBObject index = new BasicDBObject("stemmedWord", 1);
+        collection.createIndex(index, null, true);
+
+    }
+
+    public void connectDBCollection(String DBname, String DBCollection){
 
         try {
 
@@ -40,9 +60,20 @@ public class dbInterface {
         }
         System.out.println("Server is ready ");
         collection = db.getCollection(DBCollection);
-        BasicDBObject index = new BasicDBObject("stemmedWord", 1);
-        collection.createIndex(index, null, true);
 
+    }
+    public Document getDocByURLCrawlerDB(String url){
+        DBCollection collectionCrawler =  db.getCollection("url");
+//        Document urlHTMLDoc;
+        DBCursor docsCursor=collectionCrawler.find(new BasicDBObject("url_name",url));
+        if(docsCursor.hasNext()){ //Lazem ykon fe wa7d bsssss
+            BasicDBObject nextDoc= (BasicDBObject ) docsCursor.next();
+//            urlHTMLDoc=
+            return Jsoup.parse( nextDoc.getString("document"));
+
+        }
+
+        return null;
     }
 
 
@@ -265,7 +296,7 @@ public class dbInterface {
     }
     //db.getCollection('wordsIndex').find({words:{$elemMatch:{originalWord:{$in:["stacking","stacks"]}}}})
 //    db.getCollection('wordsIndex').find({words:{$elemMatch:{originalWord:{$in:["stacking","tuple"]}}}})
-    public Vector<String> findPhraseUrlIntersection(LinkedList<String> OriginalWordsToFind)  //,LinkedList<String> StemmedWordsToFind)
+    public HashMap<String, DatabaseComm> findPhraseUrlIntersection(LinkedList<String> OriginalWordsToFind)  //,LinkedList<String> StemmedWordsToFind)
     {
 
         //Vector<DatabaseComm> originalWordsInfo = new Vector<DatabaseComm>();
@@ -345,15 +376,24 @@ public class dbInterface {
         setofURLsIntersect=new HashSet<>(urlIntersect);
         System.out.println("URL Intersect length --> "+setofURLsIntersect.size());
         System.out.println(setofURLsIntersect);
-        getIntersectionPhraseWordsInfo(setofURLsIntersect,UrlBDCommAllWordsMap,OriginalWordsToFind);
-        return urlIntersect;
+        HashMap<String,DatabaseComm> urlsWithLeastOccWords = getIntersectionPhraseWordsInfo(setofURLsIntersect,UrlBDCommAllWordsMap,OriginalWordsToFind);
+        return urlsWithLeastOccWords;
     }
     // el function d kol hadfha enha trga3ly el vector of DataBaseComm feeh el URLs el intersect bs el moshkela bs
     // btrga3o 5altabita belnesba ll stemwords
-    void getIntersectionPhraseWordsInfo(Set<String> intersectedURLS,Map<String,Vector<DatabaseComm> > wordsInfoObjects,LinkedList<String> originalWordsToFind){
+    HashMap<String,DatabaseComm> getIntersectionPhraseWordsInfo(Set<String> intersectedURLS,Map<String,Vector<DatabaseComm> > wordsInfoObjects,LinkedList<String> originalWordsToFind){
+
+
+        HashMap<String,DatabaseComm> urlsWithwords = new HashMap<String,DatabaseComm>();
         // ana kda b3dy 3ala el set bs ele hya intersection mn kol l urls l kter ele ragen mn l DB
+
+
         for (String url:intersectedURLS){
             // hwa akeed el  intersect mwgoood check malosh lazma
+            Integer infinty = 9999;
+            Set dummySet = new HashSet();
+            DatabaseComm firstWordDummy= new DatabaseComm (infinty,"p","dummy",dummySet,url);
+            urlsWithwords.put(url,firstWordDummy);
             if(wordsInfoObjects.containsKey(url)){
                 for (DatabaseComm wordsInfoOnURL : wordsInfoObjects.get(url)){
                     //intersectionWordsInfo.addAll(wordsInfoObjects.get(url));
@@ -374,6 +414,14 @@ public class dbInterface {
                         phraseSearchResultFromDB.put(stemmedWordToMap,firstElementPair);
                     }
 
+                    if (urlsWithwords.get(url).occurence > wordsInfoOnURL.occurence){
+
+                        urlsWithwords.put(url,wordsInfoOnURL);
+
+
+
+                    }
+
 
                 }
             }
@@ -382,6 +430,6 @@ public class dbInterface {
         }
 
 
-        return;
+        return urlsWithwords;
     }
 }

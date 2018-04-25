@@ -1,4 +1,6 @@
 import com.mongodb.*;
+import org.jsoup.nodes.Document;
+
 
 import java.util.*;
 
@@ -8,13 +10,15 @@ public class queryProcessing {
     static dbInterface findInDB;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> wordsToRanker;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseWordsToRanker;
+    public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseFinalToRanker;
+
 
 
     public queryProcessing(String searchwords){    //,String DBname, String DBCollection){
         //searchwords = " \" stack generalization \" ";
         words = new LinkedList<String>(Arrays.asList(searchwords.split(" ")));
         wordsToRanker=new HashMap<>();
-        findInDB= new dbInterface("search_engine5","WordsIndex");        //(DBname,DBCollection);
+        findInDB= new dbInterface("search_engine6","WordsIndex");        //(DBname,DBCollection);
 
 
         LinkedList<String> ModifiedWordsList = removeStopWords(words);
@@ -69,7 +73,7 @@ public class queryProcessing {
 
         return modifiedSearchWords;
     }
-    public void doPhraseSearch(LinkedList<String> words){
+    public HashMap<String ,DatabaseComm> doPhraseSearch(LinkedList<String> words){
 
         /*intersect query to get the documents that contains all the words
          * get the word with min occurrence in each doc to start searching for the rest of the phrase
@@ -78,10 +82,12 @@ public class queryProcessing {
         for(String word: words){
             stemmedWords.add(stemmingObj.stemWord(word));
         }
-        Vector<String> urlsIntersected = findInDB.findPhraseUrlIntersection(words); //,stemmedWords); // mafrood asln hasearch 3la el stemmed fel DB
+        HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = findInDB.findPhraseUrlIntersection(words); //,stemmedWords); // mafrood asln hasearch 3la el stemmed fel DB
+
+        System.out.println("URL with Words length  " + urlsIntersectWithLeastOccWord.size());
 
 
-        return;
+        return urlsIntersectWithLeastOccWord;
 
     }
 
@@ -90,9 +96,9 @@ public class queryProcessing {
         int firstQuoteidx = words.indexOf("\"");
         int lastQuoteidx = words.lastIndexOf("\"");
         LinkedList<String> wordsBetweenQuotes = new LinkedList<>(words.subList(firstQuoteidx+1,lastQuoteidx)); //first index is inclusive second is exclusive
-        doPhraseSearch(wordsBetweenQuotes);
+        HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = doPhraseSearch(wordsBetweenQuotes);
         phraseWordsToRanker=findInDB.phraseSearchResultFromDB;
-
+        //getAllPhraseInfo (wordsBetweenQuotes,urlsIntersectWithLeastOccWord);
 
         // remove from words el phrase kolha klmat w quotes
         words.subList(firstQuoteidx,lastQuoteidx+1).clear();
@@ -103,6 +109,64 @@ public class queryProcessing {
 
         return;
     }
+
+
+    public void  getAllPhraseInfo(LinkedList<String> searchPhrase,Map <String,DatabaseComm> docsWordsMap){
+        Integer phrasePosInQuery=0;
+        String originalSearchPhrase="";//=searchPhrase.toString();        //might not work asln
+        for (String queryWord:searchPhrase){
+            originalSearchPhrase+=(queryWord+" ");
+        }
+        Vector<DatabaseComm> dbVectorToFinalMap=new Vector<>();
+        for (Map.Entry<String,DatabaseComm> urlDoc : docsWordsMap.entrySet()){
+            Pair<Integer,Integer> firstPosAndTF=getEachURLPhraseInfo(searchPhrase,urlDoc);
+            DatabaseComm dbCommToFinalMap=new DatabaseComm(firstPosAndTF.getRight(),"p",
+                    urlDoc.getValue().theWord,null,urlDoc.getKey());
+            dbVectorToFinalMap.add(dbCommToFinalMap);
+        }
+        Pair<Integer,Vector<DatabaseComm>> urlInfoToFinalMap=new Pair<>(phrasePosInQuery,dbVectorToFinalMap);
+        phraseFinalToRanker.put(originalSearchPhrase,urlInfoToFinalMap);
+    }
+
+
+
+    Pair<Integer,Integer> checkForPhrase(List<String> urlDocWords,LinkedList<String> searchPhrase,Set<Integer> positions,int posInPhrase){
+        boolean firstOcc=true,phraseMatched=true;
+        Integer firstPosition=0,newOcc=0;
+        for (Integer pos:positions){
+            for (int i = 1; i <=posInPhrase ; i++) {
+                if(!urlDocWords.get(pos-i).equals(searchPhrase.get(posInPhrase-i)))
+                {
+                    phraseMatched=false;
+                    break;
+                }
+            }
+            for (int i = 1; posInPhrase+i<searchPhrase.size() && phraseMatched; i++) {  //kan fe <=
+                if(!urlDocWords.get(pos+i).equals(searchPhrase.get(posInPhrase+i))){
+                    phraseMatched=false;
+                    break;
+                }
+            }
+            if(phraseMatched)
+                newOcc++;
+            if(firstOcc){
+                firstOcc=false;
+                firstPosition=pos;
+            }
+            phraseMatched=true;
+        }
+
+        return new Pair<Integer,Integer>(firstPosition,newOcc);
+    }
+    public Pair<Integer,Integer>  getEachURLPhraseInfo(LinkedList<String> searchPhrase,Map.Entry<String,DatabaseComm> urlDoc){
+
+        int posInPhrase=searchPhrase.indexOf(urlDoc.getValue().theWord);
+        Document urlDocHTML=findInDB.getDocByURLCrawlerDB(urlDoc.getKey());
+        List<String> urlDocWords=Arrays.asList(urlDocHTML.select("body").text().split(" "));
+        return checkForPhrase(urlDocWords,searchPhrase,urlDoc.getValue().positions,posInPhrase);
+
+    }
+
 
 }
 

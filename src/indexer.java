@@ -2,9 +2,10 @@
 
 
 import com.mongodb.*;
-import mpi.*;
-import mpi.Request;
-import mpi.Status;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.IndexOptions;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -22,12 +23,14 @@ import java.net.UnknownHostException;
 
 import javax.xml.transform.TransformerException;
 
-
+import mpi.*;
+import mpjbuf.TypeMismatchException;
 
 public class indexer implements Serializable,Runnable{
 
 	 static MongoClient mongoClient ;
-	 static DB database ;
+	 static MongoDatabase database2 ;
+	 static DB database;
 	 Object lock;
 	 URL url;
 	 Document d;
@@ -36,16 +39,22 @@ public class indexer implements Serializable,Runnable{
 	 long startTime;
 	 int no_of_threads;
 	 static Request req;
-
-	 textTags2 textTags2 = new textTags2();
+	//public dbModel runIndexerMap;
+	 
+	 textTags2 textTags2;
 
 	public indexer(int n)
 	{
 		no_of_threads=n;
+		
 	}
-	public indexer(Object o)
+	public indexer(Object o,DB db)
 	{
 		lock=o;
+	//	runIndexerMap=new dbModel();
+		database=db;
+		textTags2=new textTags2(database);
+		
 	}
 
 
@@ -55,7 +64,12 @@ public class indexer implements Serializable,Runnable{
 
 		try {
 			mongoClient = new MongoClient();
-		    database = mongoClient.getDB("search_engine5");
+		
+			database=mongoClient.getDB("search_engine7");
+			
+			database2 = mongoClient.getDatabase("search_engine7");
+		    MongoCollection<org.bson.Document> collection= database2.getCollection("WordsIndex");
+	       collection.createIndex(new BasicDBObject("stemmedWord",1), new IndexOptions().unique(true));
 		} catch (MongoException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -69,7 +83,7 @@ public class indexer implements Serializable,Runnable{
 		Object o=new Object();
 		Thread[] threads = new Thread[no_of_threads];
 		for (Integer i = 1; i <= no_of_threads; i++) {
-			Thread t1 = new Thread(new indexer(o));
+			Thread t1 = new Thread(new indexer(o,database));
 			t1.setName(i.toString());
 			t1.start();
 			threads[i - 1] = t1;
@@ -98,8 +112,15 @@ public class indexer implements Serializable,Runnable{
 
 
 		//10000 is assumed to be max url size
-		Status status= MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,MPI.ANY_TAG);
-	    System.out.println("now indexer start........");
+		Status status = null;
+		try{
+		status=MPI.COMM_WORLD.Recv(yourBytes_url,0,10000,MPI.BYTE,0,MPI.ANY_TAG);
+		}
+		catch(MPIException e)
+		{
+			
+		}
+	   // System.out.println("now indexer start........");
 
 		if(status.tag==1)
 		{
@@ -198,7 +219,6 @@ public class indexer implements Serializable,Runnable{
 
 	}
 	}
-
 
 
 
