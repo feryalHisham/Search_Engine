@@ -21,16 +21,37 @@ public class Servlet extends HttpServlet {
             processingQuery=new queryProcessing(searchString);
             processingQuery.retreiveSearchWordsInfo();
             System.out.println(searchString);
-            for (Map.Entry<String,Vector<DatabaseComm>> wordsInfoMapEntry: processingQuery.wordsToRanker.entrySet() ) {
+            System.out.println("Ranker map --->   "+processingQuery.wordsToRanker.size());
+//            Vector<String> v = new Vector<>();
+//            v.add("a");
+//
+//            v.add("b");
+//            v.add("c");
+//
+//        Vector<String> v2 = new Vector<>();
+//        v2.addAll(v);
+//
+//        Vector<String> v3 = new Vector<>();
+//        v3.add("a");
+//
+//        v2.retainAll(v3);
+//        System.out.println(v2);
 
-                System.out.println("search query "+wordsInfoMapEntry.getKey());
-                for (  DatabaseComm  wordInfo :wordsInfoMapEntry.getValue()){
+
+        for (Map.Entry<String,Pair<Integer,Vector<DatabaseComm>>> wordsInfoMapEntry: processingQuery.wordsToRanker.entrySet() ) {
+
+            System.out.println("word position --->   "+wordsInfoMapEntry.getValue().getLeft());
+
+            System.out.println("word vector --->   "+wordsInfoMapEntry.getValue().getRight().size());
+
+            //System.out.println("search query "+wordsInfoMapEntry.getKey());
+                /*for (  DatabaseComm  wordInfo :wordsInfoMapEntry.getValue()){
                     System.out.println("info:");
                     System.out.println("Original Word: "+wordInfo.getTheWord());
                     System.out.println("URL: "+wordInfo.getUrl());
                     System.out.println("TF "+wordInfo.getOccurence());
                     System.out.println("Tag: "+wordInfo.getTag());
-                }
+                }*/
 
             }
 //            PrintWriter out = response.getWriter();
