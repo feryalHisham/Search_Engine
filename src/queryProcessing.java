@@ -18,7 +18,7 @@ public class queryProcessing {
         //searchwords = " \" stack generalization \" ";
         words = new LinkedList<String>(Arrays.asList(searchwords.split(" ")));
         wordsToRanker=new HashMap<>();
-        findInDB= new dbInterface("search_engine6","WordsIndex");        //(DBname,DBCollection);
+        findInDB= new dbInterface("search_engine7","WordsIndex");        //(DBname,DBCollection);
 
 
         LinkedList<String> ModifiedWordsList = removeStopWords(words);
