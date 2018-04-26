@@ -18,10 +18,6 @@ public class Servlet extends HttpServlet {
         // Set response content type
         response.setContentType("text/html");
         String searchString=request.getParameter("searchWords");
-        processingQuery=new queryProcessing(searchString);
-        processingQuery.retreiveSearchWordsInfo();
-
-        System.out.println("size of map to ranker"+processingQuery.wordsToRanker+" "+processingQuery.phraseFinalToRanker);
 
         PrintWriter out = response.getWriter();
         String title = "Search Engine";
@@ -34,6 +30,27 @@ public class Servlet extends HttpServlet {
                 "<head><title>" + title + "</title></head>\n" +
                 "<body bgcolor=\"#f0f0f0\">\n" +
                 "<h1 align=\"center\">" + title + "</h1>\n" );
+
+
+
+        String did_you_mean=Did_you_mean.did_you_mean(searchString);
+
+        out.println( "<ul>\n" +
+                "  <li><b>Query_search: </b>:\n "
+                + searchString + "\n"+
+                "</ul>\n" );
+
+        out.println( "<ul>\n" +
+                "  <li><b>Did_you_mean: </b>:\n "
+                + did_you_mean + "\n"+
+                "</ul>\n" );
+
+
+        processingQuery=new queryProcessing(searchString);
+        processingQuery.retreiveSearchWordsInfo();
+
+        System.out.println("size of map to ranker"+processingQuery.wordsToRanker+" "+processingQuery.phraseFinalToRanker);
+
 
 
         Relevance_Ranker re_for_phrase_search;
@@ -82,6 +99,9 @@ public class Servlet extends HttpServlet {
 
              }
          }
+
+
+
 
 
 

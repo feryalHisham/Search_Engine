@@ -42,6 +42,9 @@ public class search_engine {
 			
 			my_indexer.start_indexer();
 
+			Fill_dictionary f=new Fill_dictionary();
+			f.fill_dictionary_for_did_you_mean();
+
 		}
 		
 		MPI.Finalize();

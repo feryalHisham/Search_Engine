@@ -43,7 +43,7 @@ public class dbInterface {
 //        collection.createIndex(index, null, true);
         connectDBCollection( DBname,  DBCollection);
         BasicDBObject index = new BasicDBObject("stemmedWord", 1);
-        collection.createIndex(index, null, true);
+       // collection.createIndex(index, null, true);
 
     }
 
