@@ -1,3 +1,5 @@
+import org.tartarus.snowball.ext.englishStemmer;
+
 public class stopORstem {
     stopwords checkStopWord;
     stopORstem(){
@@ -25,7 +27,9 @@ public class stopORstem {
         //else that: Stem the word
 //        porterStemmer.add(word);
 //        porterStemmer.stem();
-        return stemWord(word);//porterStemmer.toString();
+        /////////////////////////////////******E7NA SHAYLEEEEEEN EL STEMMMER*********/////////////////////////////
+ //       System.out.println(stemWordSnowball(word));
+        return stemWordSnowball(word);
 
     }
     public String prepareWord(String word){
@@ -34,11 +38,18 @@ public class stopORstem {
         return word;
     }
 
-    public String stemWord(String word){
+    public String stemWordPorter(String word){
         Stemmer porterStemmer = new Stemmer();
         prepareWord(word);
         porterStemmer.add(word);
         porterStemmer.stem();
         return porterStemmer.toString();
+    }
+
+    public String stemWordSnowball(String word){
+        englishStemmer stemmer = new englishStemmer();
+        stemmer.setCurrent(word);
+        stemmer.stem();
+        return stemmer.getCurrent();
     }
 }
