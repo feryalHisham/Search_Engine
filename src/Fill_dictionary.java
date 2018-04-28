@@ -18,7 +18,7 @@ public class Fill_dictionary {
 
     Fill_dictionary() {
         mongoClient = new MongoClient();
-        database = mongoClient.getDB("search_engine7");
+        database = mongoClient.getDB("search_engine10");
         collection = database.getCollection("WordsIndex");
 
     }

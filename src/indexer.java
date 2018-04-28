@@ -65,9 +65,9 @@ public class indexer implements Serializable,Runnable{
 		try {
 			mongoClient = new MongoClient();
 		
-			database=mongoClient.getDB("search_engine7");
+			database=mongoClient.getDB("search_engine10");
 			
-			database2 = mongoClient.getDatabase("search_engine7");
+			database2 = mongoClient.getDatabase("search_engine10");
 		    MongoCollection<org.bson.Document> collection= database2.getCollection("WordsIndex");
 	       collection.createIndex(new BasicDBObject("stemmedWord",1), new IndexOptions().unique(true));
 		} catch (MongoException e1) {

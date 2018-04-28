@@ -10,7 +10,7 @@ public class queryProcessing {
     static dbInterface findInDB;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> wordsToRanker;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseWordsToRanker;
-    public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseFinalToRanker = new HashMap<>();
+    public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseFinalToRanker;
 
 
 
@@ -18,7 +18,7 @@ public class queryProcessing {
         //searchwords = " \" stack generalization \" ";
         words = new LinkedList<String>(Arrays.asList(searchwords.split(" ")));
         wordsToRanker=new HashMap<>();
-        findInDB= new dbInterface("search_engine6","WordsIndex");        //(DBname,DBCollection);
+        findInDB= new dbInterface("search_engine10","WordsIndex");        //(DBname,DBCollection);
 
 
         LinkedList<String> ModifiedWordsList = removeStopWords(words);
@@ -98,7 +98,7 @@ public class queryProcessing {
         LinkedList<String> wordsBetweenQuotes = new LinkedList<>(words.subList(firstQuoteidx+1,lastQuoteidx)); //first index is inclusive second is exclusive
         HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = doPhraseSearch(wordsBetweenQuotes);
         phraseWordsToRanker=findInDB.phraseSearchResultFromDB;
-        getAllPhraseInfo (wordsBetweenQuotes,urlsIntersectWithLeastOccWord);
+        //getAllPhraseInfo (wordsBetweenQuotes,urlsIntersectWithLeastOccWord);
 
         // remove from words el phrase kolha klmat w quotes
         words.subList(firstQuoteidx,lastQuoteidx+1).clear();

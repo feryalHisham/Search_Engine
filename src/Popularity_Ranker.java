@@ -18,7 +18,7 @@ public class Popularity_Ranker {
     {
         urls=new HashMap<ObjectId, URL_Object>();
         mongoClient = new MongoClient();
-        database = mongoClient.getDB("search_engine7");
+        database = mongoClient.getDB("search_engine10");
 
     }
 

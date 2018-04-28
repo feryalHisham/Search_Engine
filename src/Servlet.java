@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -52,9 +54,63 @@ public class Servlet extends HttpServlet {
         System.out.println("size of map to ranker"+processingQuery.wordsToRanker+" "+processingQuery.phraseFinalToRanker);
 
 
+        boolean videos_only=false;
+
+        show_the_results_of_phrase_search(videos_only,out);
+
+        show_the_results_of_regular_search(videos_only,out);
+
+
+
+    }
+
+    public void out_the_url(String url,Integer starting_snippet, PrintWriter out )
+    {
+        out.println( "<ul>\n" +
+                "  <li>\n "
+                + url + "\n" +
+                "</ul>\n" );
+
+    }
+
+    private void show_the_results_of_regular_search(boolean videos_only, PrintWriter out ) {
+
+        Relevance_Ranker re_for_regular_words;
+        Map<String,Pair<Double,Pair<Integer,Boolean>>> regular_results=null;
+        if(processingQuery.wordsToRanker!=null)
+        {
+            re_for_regular_words=new Relevance_Ranker(processingQuery.wordsToRanker);
+            regular_results=re_for_regular_words.get_pages_sorted_from_ranker();
+
+            out.println( "<ul>\n" +
+                    "  <li><b>Regular Results</b>:\n "
+                    +
+                    "</ul>\n" );
+
+            for(String url:regular_results.keySet())
+            {
+                Pair<Integer,Boolean> snippet_video=regular_results.get(url).getRight();
+                if(videos_only)
+                {
+                    if(snippet_video.getRight()==true)
+                        out_the_url(url,snippet_video.getLeft(),out);
+
+                }
+                else
+                {
+
+                    out_the_url(url,snippet_video.getLeft(),out);
+                }
+
+
+            }
+        }
+    }
+
+    private void show_the_results_of_phrase_search(boolean videos_only, PrintWriter out ) {
 
         Relevance_Ranker re_for_phrase_search;
-        Map<String,Pair<Double,Integer>> phrase_results = null;
+        Map<String,Pair<Double,Pair<Integer,Boolean>>> phrase_results = null;
         if(processingQuery.phraseFinalToRanker!=null)
         {
             re_for_phrase_search=new Relevance_Ranker(processingQuery.phraseFinalToRanker);
@@ -66,45 +122,24 @@ public class Servlet extends HttpServlet {
                     "</ul>\n" );
             for(String url:phrase_results.keySet())
             {
-                out.println( "<ul>\n" +
-                        "  <li>\n "
-                        + url + "\n" +
-                        "</ul>\n" );
+                Pair<Integer,Boolean> snippet_video=phrase_results.get(url).getRight();
+                if(videos_only)
+                {
+                    if(snippet_video.getRight()==true)
+                        out_the_url(url,snippet_video.getLeft(),out);
+
+                }
+                else
+                {
+
+                    out_the_url(url,snippet_video.getLeft(),out);
+                }
+
 
             }
 
 
         }
-
-
-        Relevance_Ranker re_for_regular_words;
-        Map<String,Pair<Double,Integer>> regular_results=null;
-         if(processingQuery.wordsToRanker!=null)
-         {
-             re_for_regular_words=new Relevance_Ranker(processingQuery.wordsToRanker);
-             regular_results=re_for_regular_words.get_pages_sorted_from_ranker();
-
-             out.println( "<ul>\n" +
-                     "  <li><b>Regular Results</b>:\n "
-                   +
-                     "</ul>\n" );
-
-             for(String url:regular_results.keySet())
-             {
-                 out.println( "<ul>\n" +
-                         "  <li>\n "
-                         + url + "\n" +
-                         "</ul>\n" );
-
-
-             }
-         }
-
-
-
-
-
-
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

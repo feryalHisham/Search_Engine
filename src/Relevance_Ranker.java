@@ -23,7 +23,7 @@ public class Relevance_Ranker {
     Pair<Double,Double> the_min_diff_of_url_with_max_QWs;
 
 
-    HashMap<String,Pair<Double,Integer>> final_rank;
+    HashMap<String,Pair<Double,Pair<Integer,Boolean>>> final_rank;
 
     Map<String, Double> ranks_from_popularity;
 
@@ -36,7 +36,7 @@ public class Relevance_Ranker {
         Query_words = new HashMap<>();
 
         mongoClient = new MongoClient();
-        database = mongoClient.getDB("search_engine7");
+        database = mongoClient.getDB("search_engine10");
 
 
         Query_words = temp;
@@ -206,12 +206,12 @@ public class Relevance_Ranker {
             }
 
 
-            Double rank_from_popularity_ranker= get_rank_from_db(url);; //to be changed
+           Pair<Double,Boolean> rank_from_popularity_ranker= get_rank_from_db(url);; //to be changed  //boolean is_video
             //code will be added here
 
 
 
-            final_rank.put(url, new Pair(IR_score_pos*rank_from_popularity_ranker,starting_snippet));
+            final_rank.put(url, new Pair(IR_score_pos*rank_from_popularity_ranker.getLeft(),new Pair(starting_snippet,rank_from_popularity_ranker.getRight())));
         }
     }
 
@@ -584,7 +584,7 @@ public class Relevance_Ranker {
         }
     }
 
-    public Map<String, Pair<Double,Integer>> get_pages_sorted_from_ranker()
+    public Map<String, Pair<Double,Pair<Integer,Boolean>>> get_pages_sorted_from_ranker()
     {
 
         Calc_TFs_IDFs_Fill_pos();
@@ -592,8 +592,9 @@ public class Relevance_Ranker {
 
         Calc_IR_Score_pos();
 
-        Map<String, Pair<Double,Integer>> sorted_final_map = sortByValue(final_rank); //this is a map sorted on values decriesingly
-
+        System.out.println(final_rank.size());
+        Map<String,Pair<Double,Pair<Integer,Boolean>>> sorted_final_map = sortByValue(final_rank); //this is a map sorted on values decriesingly
+        System.out.println(sorted_final_map.size());
         return sorted_final_map;
     }
     public void Calc_IR_Score_phrase(){
@@ -607,25 +608,31 @@ public class Relevance_Ranker {
             {
 
                 Integer IR_score = originals.get(i).getOccurence()*IDF;
-                Double rank_from_popularity_ranker = get_rank_from_db(originals.get(i).url);; //to be changed
+                Pair<Double,Boolean> rank_from_popularity_ranker = get_rank_from_db(originals.get(i).url);; //to be changed
                 //code will be added here
 
 
 
-                final_rank.put(originals.get(i).getUrl(), new Pair(IR_score * rank_from_popularity_ranker, -1));
+                final_rank.put(originals.get(i).getUrl(), new Pair(IR_score * rank_from_popularity_ranker.getLeft()
+                        , new Pair(-1,rank_from_popularity_ranker.getRight())));
 
             }
         }
 
 
     }
-    public Double get_rank_from_db(String url)
+    public  Pair<Double,Boolean> get_rank_from_db(String url)
     {
         Double rank=1.0;
+        Boolean is_video=null;
         DBCollection collection = database.getCollection("url");
 
+        BasicDBObject fieldObject = new BasicDBObject();
+        fieldObject.put("pr", 1);
+        fieldObject.put("is_video", 1);
+
         DBCursor cursor = collection.find(new BasicDBObject("url_name", url),
-                new BasicDBObject("pr", 1));
+                fieldObject);
 
 
         while (cursor.hasNext()) {
@@ -633,28 +640,56 @@ public class Relevance_Ranker {
             // key);
             BasicDBObject object = (BasicDBObject) cursor.next();
             rank = object.getDouble("pr");
+            is_video=object.getBoolean("is_video");
+
 
         }
 
-        return rank;
+        return new Pair<>(rank,is_video);
     }
-    public Map<String, Pair<Double,Integer>> get_pages_sorted_from_ranker_phrase()
+    public Map<String, Pair<Double,Pair<Integer,Boolean>>> get_pages_sorted_from_ranker_phrase()
     {
 
 
         Calc_IR_Score_phrase();
 
-        Map<String, Pair<Double,Integer>> sorted_final_map = sortByValue(final_rank); //this is a map sorted on values decriesingly
+        Map<String, Pair<Double,Pair<Integer,Boolean>>> sorted_final_map = sortByValue(final_rank); //this is a map sorted on values decriesingly
 
         return sorted_final_map;
     }
 
-    public static Map sortByValue(Map unsortedMap) {
+   /* public static Map sortByValue(Map unsortedMap) {
         Map sortedMap = new TreeMap(new ValueComparator(unsortedMap));
         sortedMap.putAll(unsortedMap);
         return sortedMap;
-    }
+    }*/
 
+
+    private static Map<String, Pair<Double,Pair<Integer,Boolean>>> sortByValue(Map<String, Pair<Double,Pair<Integer,Boolean>>> unsortMap) {
+
+        // 1. Convert Map to List of Map
+        List<Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>>> list =
+                new LinkedList<Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>>>(unsortMap.entrySet());
+
+        // 2. Sort list with Collections.sort(), provide a custom Comparator
+        //    Try switch the o1 o2 position for a different order
+        Collections.sort(list, new Comparator<Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>>>() {
+            public int compare(Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>> o1,
+                               Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>> o2) {
+                return (o2.getValue().getLeft()).compareTo(o1.getValue().getLeft());
+            }
+        });
+
+        // 3. Loop the sorted list and put it into a new insertion order Map LinkedHashMap
+        Map<String, Pair<Double,Pair<Integer,Boolean>>> sortedMap = new LinkedHashMap<String, Pair<Double,Pair<Integer,Boolean>>>();
+        for (Map.Entry<String, Pair<Double,Pair<Integer,Boolean>>> entry : list) {
+            sortedMap.put(entry.getKey(), entry.getValue());
+        }
+
+
+
+        return sortedMap;
+    }
     //for test
     public static void main(String[] args) throws Exception{
 
@@ -669,8 +704,9 @@ public class Relevance_Ranker {
         processingQuery=new queryProcessing(searchString);
         processingQuery.retreiveSearchWordsInfo();
 
+        /*
 
-       /* SortedSet<Integer> s= new  TreeSet<>();
+       SortedSet<Integer> s= new  TreeSet<>();
 
 
         Map<String, Pair<Integer, Vector<DatabaseComm>>> temp=new HashMap<>();
@@ -755,13 +791,22 @@ public class Relevance_Ranker {
         v.add(d);
 
 
-        temp.put("beautiful",new Pair<>(1,v));*/
+        temp.put("beautiful",new Pair<>(1,v));**/
 
         Relevance_Ranker re=new Relevance_Ranker(processingQuery.wordsToRanker);
-        Map<String,Pair<Double,Integer>> map=re.get_pages_sorted_from_ranker();
+        Map<String,Pair<Double,Pair<Integer,Boolean>>> map=re.get_pages_sorted_from_ranker();
 
         System.out.print("total time of relevance rank: ");
         System.out.println(System.nanoTime()-startTime);
+//        Map<String,Pair<Double,Pair<Integer,Boolean>>> map=new HashMap<>();
+//
+//        map.put("heba",new Pair(4.0,new Pair<>(2,false)));
+//        map.put("feryal",new Pair(10.0,new Pair<>(2,false)));
+//        map.put("fatema",new Pair(3.0,new Pair<>(2,false)));
+//
+//        Map<String,Pair<Double,Pair<Integer,Boolean>>> map_s=sortByValue(map);
+
+
 
        /* Map<String, Pair<Integer, Vector<DatabaseComm>>> temp2=new HashMap<>();
 

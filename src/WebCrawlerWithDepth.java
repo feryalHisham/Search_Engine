@@ -488,7 +488,7 @@ public class WebCrawlerWithDepth implements Runnable, Serializable {
 
 		long startTime = System.nanoTime();
 		mongoClient = new MongoClient();
-		database = mongoClient.getDB("search_engine7");
+		database = mongoClient.getDB("search_engine10");
 
 		initialization();
 
