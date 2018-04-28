@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 import com.mongodb.BulkWriteError;
 import com.mongodb.util.JSON;
 import org.bson.*;
-import org.bson.types.ObjectId;
 
 public class dbInterface {
 
@@ -17,29 +16,28 @@ public class dbInterface {
     BulkWriteOperation insertBuilder;
     DBCollection collection;
 
-    dbInterface(String DBname, String DBCollection) {
-        wordsFirstinserted = new LinkedList<>();
+    dbInterface(String DBCollection,DB database){
+        wordsFirstinserted=new LinkedList<>();
 
         try {
 
-            MongoClient mongoClient = new MongoClient("localhost", 27017);
-            db = mongoClient.getDB(DBname);
+            //MongoClient mongoClient = new MongoClient("localhost", 27017);
+            db = database;
             System.out.println("Connected to Database");
 
         } catch (Exception e) {
             System.out.println(e);
         }
-        System.out.println("Server is ready ");
+        //System.out.println("Server is ready ");
         collection = db.getCollection(DBCollection);
-        BasicDBObject index= new BasicDBObject("stemmedWord",1);
-        collection.createIndex(index,null,true);
+        //collection.createIndex("stemmedWord");
 
     }
 
-    public void insertData(Map.Entry<String, DatabaseComm> originalWords, String url) {
+    public void insertData(Map.Entry<String, DatabaseComm> originalWords, String url, String stemmedWord) {
         BasicDBObject toInsert = new BasicDBObject();
 
-        toInsert.put("stemmedWord", originalWords.getKey());
+        toInsert.put("stemmedWord", stemmedWord);
         toInsert.put("idf", 1);
 
         List<BasicDBObject> URLs = new ArrayList<>();
@@ -52,9 +50,9 @@ public class dbInterface {
         URLs.add(wordObject);
         toInsert.put("words", URLs);
 
-//        wordsFirstinserted.add(toInsert);
-        insertBuilder = collection.initializeUnorderedBulkOperation();
-        insertBuilder.insert(toInsert);
+        wordsFirstinserted.add(toInsert);
+//        insertBuilder = collection.initializeUnorderedBulkOperation();
+//        insertBuilder.insert(toInsert);
 
     }
 
@@ -107,6 +105,7 @@ public class dbInterface {
         }
         builder.execute();
         //TODO extra isa to use it once for every url
+        // another TODO decide what to do with the IDF
 
 
     }
@@ -125,61 +124,86 @@ public class dbInterface {
         collection.update(b1, b4, false, true);
 
     }
-    // Gets the ID from error msg from duplicate key exception
     String findStemmedWord(String errormsg)
     {
         Matcher m = Pattern.compile("[\"]([^\"]*)[\"]").matcher(errormsg);  //("[0-9a-f]{24}")
         m.find();
+
+        if(m.equals(null))
+            return "";
         return m.group().replace("\"","");
     }
 
 
     void duplicateKeyHandler(MongoException e ){
 
-            int insertionListSize= wordsFirstinserted.size();
-            if(insertionListSize==0)
-                return;
-            String erroredStemmedWord=findStemmedWord(e.getMessage());
+        int insertionListSize= wordsFirstinserted.size();
+        if(insertionListSize==0)
+            return;
+        String erroredStemmedWord="";
+        try{
+            erroredStemmedWord=findStemmedWord(e.getMessage());
 
-            for (int i = 0; i < insertionListSize; ++i)  {
+        }
+        catch(IllegalStateException ee)
+        {
+            erroredStemmedWord="";
+        }
 
+
+        for (int i = 0; i < insertionListSize; ++i)  {
+
+            if (!wordsFirstinserted.getFirst().get("stemmedWord").equals(null))
+            {
                 if(wordsFirstinserted.getFirst().get("stemmedWord").equals(erroredStemmedWord))
                 {
 
-                        //TODO: CAll update for the held object and insert to the rest of the list
+                    //b7oto fe array b2a
+                    BasicDBObject tempisa = new BasicDBObject();
 
-                        //b7oto fe array b2a
-                        BasicDBObject tempisa = new BasicDBObject();
-
-                        String temp11 = wordsFirstinserted.getFirst().get("words").toString();
-                        String s1 = temp11.substring(1,temp11.length()-1);
-//                        System.out.println(s1);
-                        BasicDBObject dbObject =  (BasicDBObject) JSON.parse(s1);
+                    String temp11 = wordsFirstinserted.getFirst().get("words").toString();
+                    String s1 = temp11.substring(1,temp11.length()-1);
+//        	                        System.out.println(s1);
+                    BasicDBObject dbObject =  (BasicDBObject) JSON.parse(s1);
 
 
-                        tempisa.put("$addToSet", new BasicDBObject().append("words",dbObject)); //mmkn tb2a $push
+                    tempisa.put("$addToSet", new BasicDBObject().append("words",dbObject)); //mmkn tb2a $push
 
-                        collection.update(new BasicDBObject().append("stemmedWord", erroredStemmedWord),tempisa);
-                        wordsFirstinserted.removeFirst();
-                        try {
-                            if (wordsFirstinserted.equals(null))
-                                return;
+                    collection.update(new BasicDBObject().append("stemmedWord", erroredStemmedWord),tempisa);
+                    wordsFirstinserted.removeFirst();
+                    try {
+                        if (wordsFirstinserted != null&&wordsFirstinserted.size()!=0){
+
+                            //System.out.println("b-insert words");
                             collection.insert(wordsFirstinserted);
-                        }catch (MongoException er){
-                            if (er.getCode() == 11000)
-                                duplicateKeyHandler(er);
-
                         }
-                        break;
+                    }catch (MongoException er){
+                        if (er.getCode() == 11000)
+                        {
+                            //System.out.println("error---------- "+er.getCode());
+                            duplicateKeyHandler(er);
+                        }
 
+
+                    }
+
+                    break;
 
                 }
-//                System.out.println(wordsFirstinserted.getFirst().get("stemmedWord"));
-
-                wordsFirstinserted.removeFirst();    // ftema 5awafaaaaaaaaaaaaa
-
             }
+
+
+
+            wordsFirstinserted.removeFirst();
+
+
+        }
+
+//                System.out.println(wordsFirstinserted.getFirst().get("stemmedWord"));
+        // ftema 5awafaaaaaaaaaaaaa
+
     }
+
     public void initDB(/*String DBname,String DBCollection,*/ Map<String, Map<String, DatabaseComm>> interConnection, String url, boolean recrawl) {
 
 
@@ -188,66 +212,47 @@ public class dbInterface {
 
         for (Map.Entry<String, Map<String, DatabaseComm>> stemmedword : interConnection.entrySet()) {
             BasicDBObject theWord = new BasicDBObject();
+            System.out.println("stemmed word in dbInterface "+stemmedword.getKey()); //feryal
             theWord.put("stemmedWord", stemmedword.getKey());
 
 
-            //check for the word to be inserted
             DBCursor dbCursor = collection.find(theWord);
             if (dbCursor.hasNext()) {
+                //TODO: check for the word to be inserted
                 updateStemmedWord(collection, url, stemmedword.getValue(), stemmedword.getKey());
 
 
             } else {
                 //The stemmed word itself doesn't exist
                 for (Map.Entry<String, DatabaseComm> originalWords : stemmedword.getValue().entrySet()) {
-                    insertData(originalWords, url);
+                    insertData(originalWords, url,stemmedword.getKey());
                 }
             }
 
         }
         //System.out.println("----------->"+wordsFirstinserted);
         try {
-            collection.insert(wordsFirstinserted);
+            if (wordsFirstinserted != null&&wordsFirstinserted.size()!=0){
+
+                //System.out.println("b-insert words");
+                collection.insert(wordsFirstinserted);
+            }
         }catch(MongoException e){
             if (e.getCode() == 11000)
+            {
+                //System.out.println("error---------- "+e.getCode());
                 duplicateKeyHandler(e);
-
-        }
-
-
-    }
-
-
-    public Vector<DatabaseComm>  findByStemmedWord(String stemmedWord){
-        Vector<DatabaseComm> originalWordsInfo = new Vector<DatabaseComm>();
-
-        BasicDBObject toFind = new BasicDBObject();
-
-        toFind.put("stemmedWord",stemmedWord );
-        DBCursor wordsFound= collection.find(toFind);
-        if(wordsFound.hasNext()){
-            BasicDBObject stemmedWordObj=(BasicDBObject) wordsFound.next();
-            BasicDBList  wordsList= (BasicDBList) stemmedWordObj.get("words");
-            if(wordsList!=null){
-                Iterator<Object> wordsIterator= wordsList.iterator();
-                while (wordsIterator.hasNext()) {
-                    BasicDBObject wordObj = (BasicDBObject) wordsIterator.next();
-                    DatabaseComm originalWordStructure = new DatabaseComm(Integer.getInteger(wordObj.get("tf").toString()),
-                                    wordObj.get("tag").toString(),
-                                    wordObj.get("originalWord").toString(),
-                            (List<Integer>) wordObj.get("positions"),
-                                    wordObj.get("url").toString());
-
-                    originalWordsInfo.add(originalWordStructure);
-                }
-
             }
+
         }
 
-        return originalWordsInfo;
+
+
+
+//        wordsFirstinserted.clear();
+        //System.out.println("*_*_*_*_*_*"+wordsFirstinserted);
 
     }
 }
-
 
 
