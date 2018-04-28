@@ -1,20 +1,114 @@
-<html>
+
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-    <meta content="utf-8" http-equiv="encoding">
-    <script src="autocomp.js"> </script>
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" charset="UTF-8">
+    <!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+    <!-- Title -->
+    <title>7asbya allah w n3m l wakeel</title>
+
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
-<FORM action="Servlet" method="GET">
-Search: <input id ="searchBox" type="text" name="searchWords" placeholder="Enter your search words here" onkeyup="autocomp();">
-<input type="submit" value="Submit" />
 
-
-</FORM>
-
-<div id="demo">
-    Results
+<!-- Preloader -->
+<div id="preloader">
+    <div class="preload-content">
+        <div id="original-load"></div>
+    </div>
 </div>
+
+<!-- ##### Header Area Start ##### -->
+<header class="header-area">
+
+    <!-- Nav Area -->
+    <div class="original-nav-area" id="stickyNav">
+        <div class="classy-nav-container breakpoint-off">
+            <div class="container">
+                <!-- Classy Menu -->
+                <nav class="classy-navbar justify-content-between">
+
+                    <!-- Navbar Toggler -->
+                    <div class="classy-navbar-toggler">
+                        <span class="navbarToggler"><span></span><span></span><span></span></span>
+                    </div>
+
+                    <!-- Menu -->
+                    <div class="classy-menu" id="originalNav">
+                        <!-- close btn -->
+                        <div class="classycloseIcon">
+                            <div class="cross-wrap"><span class="top"></span><span class="bottom"></span></div>
+
+
+                        </div>
+
+                        <!-- Search Form  -->
+                        <div id="search-wrapper">
+                            <!--<form action="Servlet" method="GET">-->
+
+                            <input type="text" id="search" placeholder="Search something..." onkeyup="autocomp();" >
+                            
+                            <div id="close-icon"></div>
+                            <!--<input class="d-none" type="submit" value="">-->
+                            <button class="btn original-btn"  onclick="searchAgain();">search</button>
+                            <button class="btn original-btn"  onclick="searchAgain2();">p2</button>
+                            <button class="btn original-btn"  onclick="searchAgain3();">p3</button>
+                            <!--class="btn original-btn" class="leftit"-->
+                            <!--</form>-->
+                            <input id = "videoChkeckBox" type="checkbox" name="videoCheck" value="videos" onclick   ="searchAgain();"> Videos Only
+
+                        </div>
+
+
+                    </div>
+                    <!--</div>-->
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+<!-- ##### Header Area End ##### -->
+
+<!-- ##### Single Result Area Start ##### -->
+<div class="single-blog-wrapper section-padding-0-100">
+
+
+    <div class="container" >
+        <div class="row" id="searchResults">
+
+            resultttts
+
+
+
+        </div>
+    </div>
+
+</div>
+<!-- jQuery (Necessary for All JavaScript Plugins) -->
+
+<script src="js/jquery/jquery-2.2.4.min.js"></script>
+<!-- Popper js -->
+<script src="js/popper.min.js"></script>
+<!-- Bootstrap js -->
+<script src="js/bootstrap.min.js"></script>
+<!-- Plugins js -->
+<script src="js/plugins.js"></script>
+<!-- Active js -->
+<script src="js/active.js"></script>
+
+<script src="autocomp.js"> </script>
+<script src="did_you_mean.js"> </script>
+<script src="Videos.js"> </script>
+
 </body>
+
 </html>

@@ -9,10 +9,29 @@ function autocomp() {
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && (this.status == 200 || this.status == 500)) {
             console.log("got response");
-             document.getElementById("demo").innerHTML = this.responseText;
+           document.getElementById("searchResults").innerHTML = this.responseText;
+            //document.getElementById("showme").innerHTML = this.responseText;
+
+             /*var suggestWords = (this.responseText).split();
+             console.log("response -->"+suggestWords);*/
+            //var iDiv = document.getElementById("suggest");
+            
+// Now create and append to iDiv
+
+            /*var k=0;
+            for (var suggestWord in suggestWords) {
+                var innerDiv = document.createElement('span');
+                var innerID='block'+k;
+                innerDiv.className = innerID;
+                innerDiv.setAttribute("value",suggestWord);
+                console.log(suggestWord);
+                iDiv.appendChild(innerDiv);
+                ++k;
+
+            }*/
         }
     };
-    var userWords = document.getElementById("searchBox").value;
+    var userWords = document.getElementById("search").value;
     xhttp.open("GET", "Servlet?action=autocomp&userSearch="+userWords, true);
     console.log(userWords);
     xhttp.send();
