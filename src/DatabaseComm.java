@@ -1,27 +1,27 @@
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.BulkWriteOperation;
 import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.WriteResult;
+import com.trigonic.jrobotx.RobotExclusion;
 
 import java.util.*;
 
 public class DatabaseComm{
 
     int occurence;
-
-    public String getTheWord() {
-        return theWord;
-    }
-
     String tag;
     String theWord;
-    List<Integer> positions;
+    Set<Integer> positions;
     Map<String, Integer > wordtags;
     String url;
 
-    public String getUrl() {
-        return url;
-    }
 //    final static String[] neededTags={"p","pre","span","li","h1","h2", "h3", "h4", "h5", "h6"};
+
 
     public void addPosition(int pos) {
 
@@ -30,20 +30,20 @@ public class DatabaseComm{
     }
 
 
-    public List<Integer> getPositions() {
+    public Set<Integer> getPositions() {
         return positions;
     }
 
     public DatabaseComm(){
 //        wordtags=new HashMap<String,Integer >();
-        positions=new ArrayList<Integer>();
+        positions=new HashSet<>();
         occurence=0;
         tag=new String();
         tag="p";
 
-           }
+    }
 
-    public DatabaseComm (int occurence,String tag,String theWord,List<Integer> positions,String url)
+    public DatabaseComm (int occurence,String tag,String theWord,Set<Integer> positions,String url)
     {
         this.occurence =occurence;
         this.tag = tag;
@@ -93,5 +93,9 @@ public class DatabaseComm{
 
         return tag="h";
 
+    }
+    public String getUrl()
+    {
+        return url;
     }
 }

@@ -64,6 +64,7 @@ public class dbModel {
 
         //Stemming
         String stemmedWord=modifier.modifyWord(originalWord,"p");
+        
         if(stemmedWord==null)
             return;
         if(urlStemmedWords.containsKey(stemmedWord)) {

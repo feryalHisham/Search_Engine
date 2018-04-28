@@ -19,9 +19,9 @@ public class textTags2 {
     //final static String[] neededTags={"h1","h2", "h3", "h4", "h5", "h6"};
     dbModel runIndexerMap;
     dbInterface dataToDB;
-    textTags2(){
+    textTags2(DB database){
         runIndexerMap=new dbModel();
-        dataToDB= new dbInterface("search_engine5","WordsIndex");
+        dataToDB= new dbInterface("WordsIndex",database);
     }
 
 

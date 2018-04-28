@@ -7,7 +7,7 @@ import java.util.*;
 public class queryProcessing {
     LinkedList<String> words;
     static stopORstem stemmingObj = new stopORstem();
-    static dbInterface findInDB;
+    static dbInterface findInDB,addHistoryDB;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> wordsToRanker;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseWordsToRanker;
     public Map<String,Pair< Integer,Vector<DatabaseComm> >> phraseFinalToRanker = new HashMap<>();
@@ -18,8 +18,10 @@ public class queryProcessing {
         //searchwords = " \" stack generalization \" ";
         words = new LinkedList<String>(Arrays.asList(searchwords.split(" ")));
         wordsToRanker=new HashMap<>();
-        findInDB= new dbInterface("search_engine6","WordsIndex");        //(DBname,DBCollection);
+        findInDB= new dbInterface("search_engine10","WordsIndex");        //(DBname,DBCollection);
 
+        addHistoryDB = new dbInterface();
+        addHistoryDB.connectDBCollection("search_engine10","history");
 
         LinkedList<String> ModifiedWordsList = removeStopWords(words);
         if (ModifiedWordsList.size()!=0){
@@ -43,15 +45,21 @@ public class queryProcessing {
         System.out.println("Searching for -->"+ word);
         if(wordsToRanker.containsKey(word))
             return wordsToRanker.get(word).getRight() ;
-        return findInDB.findByStemmedWord( word); //stemmingObj.stemWord(word));
+        return findInDB.findByStemmedWord(stemmingObj.stemWordSnowball(word));   // stemmer added
 
     }
 
     public void retreiveSearchWordsInfo(){
         for(String word:words){
 
+            String originalWord = word;
             Pair<Integer,Vector<DatabaseComm>> wordPair = new Pair<>(words.indexOf(word),retreive_stemmed_word_info(word));
-            wordsToRanker.put(word,wordPair);
+            if(wordPair.getRight().size()!=0) {
+                wordsToRanker.put(word, wordPair);
+
+                addHistoryDB.addToHistory(originalWord);
+
+            }
         }
     }
 
@@ -80,9 +88,9 @@ public class queryProcessing {
          */
         LinkedList<String> stemmedWords = new LinkedList<>();
         for(String word: words){
-            stemmedWords.add(stemmingObj.stemWord(word));
+            stemmedWords.add(stemmingObj.stemWordSnowball(word));
         }
-        HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = findInDB.findPhraseUrlIntersection(words); //,stemmedWords); // mafrood asln hasearch 3la el stemmed fel DB
+        HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = findInDB.findPhraseUrlIntersection(words,stemmedWords); // mafrood asln hasearch 3la el stemmed fel DB
 
         System.out.println("URL with Words length  " + urlsIntersectWithLeastOccWord.size());
 
@@ -104,7 +112,7 @@ public class queryProcessing {
         words.subList(firstQuoteidx,lastQuoteidx+1).clear();
         //words.removeAll(Collections.singleton("\'"));
         for(String word:wordsBetweenQuotes){
-            System.out.println("URL Vector in Map length --> "+phraseWordsToRanker.get(word).getRight().size());
+            //System.out.println("URL Vector in Map length --> "+phraseWordsToRanker.get(word).getRight().size());
         }
 
         return;
@@ -120,8 +128,10 @@ public class queryProcessing {
         Vector<DatabaseComm> dbVectorToFinalMap=new Vector<>();
         for (Map.Entry<String,DatabaseComm> urlDoc : docsWordsMap.entrySet()){
             Pair<Integer,Integer> firstPosAndTF=getEachURLPhraseInfo(searchPhrase,urlDoc);
+
+            Set<Integer> firstPosinDoc = new HashSet<>(firstPosAndTF.getLeft());
             DatabaseComm dbCommToFinalMap=new DatabaseComm(firstPosAndTF.getRight(),"p",
-                    urlDoc.getValue().theWord,null,urlDoc.getKey());
+                    urlDoc.getValue().theWord,firstPosinDoc,urlDoc.getKey());
             dbVectorToFinalMap.add(dbCommToFinalMap);
         }
         Pair<Integer,Vector<DatabaseComm>> urlInfoToFinalMap=new Pair<>(phrasePosInQuery,dbVectorToFinalMap);
@@ -130,10 +140,42 @@ public class queryProcessing {
 
 
 
-    Pair<Integer,Integer> checkForPhrase(List<String> urlDocWords,LinkedList<String> searchPhrase,Set<Integer> positions,int posInPhrase){
-        boolean firstOcc=true,phraseMatched=true;
+    Pair<Integer,Integer> checkForPhrase(List<String> urlDocWords,LinkedList<String> searchPhrase){ //,Set<Integer> positions,int posInPhrase){
+        boolean firstOcc=true,phraseMatched=false;
         Integer firstPosition=0,newOcc=0;
-        for (Integer pos:positions){
+
+        int urlDocWordsidx=0,searchPhraseidx=0;
+
+       while (urlDocWordsidx < urlDocWords.size()){
+
+           searchPhraseidx =0;
+           while (searchPhraseidx < searchPhrase.size()){
+
+               if (urlDocWordsidx < urlDocWords.size() && searchPhrase.get(searchPhraseidx).equals(urlDocWords.get(urlDocWordsidx))){
+
+                   if(firstOcc) {
+                       firstPosition = urlDocWordsidx;
+                       firstOcc=false;
+                   }
+                   phraseMatched = true;
+                    searchPhraseidx++;
+                   urlDocWordsidx++;
+               }
+
+               if(phraseMatched) {
+                   phraseMatched=false;
+                   newOcc++;
+               }
+
+
+           }
+           urlDocWordsidx++;
+
+       }
+
+
+
+        /*for (Integer pos:positions){
             for (int i = 1; i <=posInPhrase ; i++) {
                 if(!urlDocWords.get(pos-i).equals(searchPhrase.get(posInPhrase-i)))
                 {
@@ -154,7 +196,7 @@ public class queryProcessing {
                 firstPosition=pos;
             }
             phraseMatched=true;
-        }
+        }*/
 
         return new Pair<Integer,Integer>(firstPosition,newOcc);
     }
@@ -163,7 +205,7 @@ public class queryProcessing {
         int posInPhrase=searchPhrase.indexOf(urlDoc.getValue().theWord);
         Document urlDocHTML=findInDB.getDocByURLCrawlerDB(urlDoc.getKey());
         List<String> urlDocWords=Arrays.asList(urlDocHTML.select("body").text().split(" "));
-        return checkForPhrase(urlDocWords,searchPhrase,urlDoc.getValue().positions,posInPhrase);
+        return checkForPhrase(urlDocWords,searchPhrase);//,urlDoc.getValue().positions,posInPhrase);
 
     }
 
