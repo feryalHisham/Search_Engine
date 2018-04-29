@@ -613,8 +613,13 @@ public class Relevance_Ranker {
 
 
 
+                Iterator iter = originals.get(i).getPositions().iterator();
+                System.out.println("iterator phrase : "+originals.get(i).getPositions());
+
+                Object first = iter.next();
+                System.out.println("posistion phrase : "+first);
                 final_rank.put(originals.get(i).getUrl(), new Pair(IR_score * rank_from_popularity_ranker.getLeft()
-                        , new Pair(-1,rank_from_popularity_ranker.getRight())));
+                        , new Pair(first,rank_from_popularity_ranker.getRight())));
 
             }
         }

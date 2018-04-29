@@ -105,9 +105,13 @@ public class queryProcessing {
         int lastQuoteidx = words.lastIndexOf("\"");
         LinkedList<String> wordsBetweenQuotes = new LinkedList<>(words.subList(firstQuoteidx+1,lastQuoteidx)); //first index is inclusive second is exclusive
         HashMap<String ,DatabaseComm> urlsIntersectWithLeastOccWord = doPhraseSearch(wordsBetweenQuotes);
+
+        System.out.println("urlsIntersectWithLeastOccWord  "+urlsIntersectWithLeastOccWord.size());
+
         phraseWordsToRanker=findInDB.phraseSearchResultFromDB;
         getAllPhraseInfo (wordsBetweenQuotes,urlsIntersectWithLeastOccWord);
 
+        System.out.println("phraseWordsToRanker--> "+phraseFinalToRanker.size());
         // remove from words el phrase kolha klmat w quotes
         words.subList(firstQuoteidx,lastQuoteidx+1).clear();
         //words.removeAll(Collections.singleton("\'"));
@@ -129,7 +133,8 @@ public class queryProcessing {
         for (Map.Entry<String,DatabaseComm> urlDoc : docsWordsMap.entrySet()){
             Pair<Integer,Integer> firstPosAndTF=getEachURLPhraseInfo(searchPhrase,urlDoc);
 
-            Set<Integer> firstPosinDoc = new HashSet<>(firstPosAndTF.getLeft());
+            Set<Integer> firstPosinDoc = new HashSet<>();
+            firstPosinDoc.add(firstPosAndTF.getLeft());
             DatabaseComm dbCommToFinalMap=new DatabaseComm(firstPosAndTF.getRight(),"p",
                     urlDoc.getValue().theWord,firstPosinDoc,urlDoc.getKey());
             dbVectorToFinalMap.add(dbCommToFinalMap);
@@ -140,38 +145,43 @@ public class queryProcessing {
 
 
 
-    Pair<Integer,Integer> checkForPhrase(List<String> urlDocWords,LinkedList<String> searchPhrase){ //,Set<Integer> positions,int posInPhrase){
+    Pair<Integer,Integer>  checkForPhrase(List<String> urlDocWords, LinkedList<String> searchPhrase){
         boolean firstOcc=true,phraseMatched=false;
         Integer firstPosition=0,newOcc=0;
 
         int urlDocWordsidx=0,searchPhraseidx=0;
 
-       while (urlDocWordsidx < urlDocWords.size()){
-
-           searchPhraseidx =0;
-           while (searchPhraseidx < searchPhrase.size()){
-
-               if (urlDocWordsidx < urlDocWords.size() && searchPhrase.get(searchPhraseidx).equals(urlDocWords.get(urlDocWordsidx))){
-
-                   if(firstOcc) {
-                       firstPosition = urlDocWordsidx;
-                       firstOcc=false;
-                   }
-                   phraseMatched = true;
-                    searchPhraseidx++;
-                   urlDocWordsidx++;
-               }
-
-               if(phraseMatched) {
-                   phraseMatched=false;
-                   newOcc++;
-               }
+        while (urlDocWordsidx < urlDocWords.size()){
 
 
-           }
-           urlDocWordsidx++;
 
-       }
+            if ( searchPhraseidx < searchPhrase.size() && searchPhrase.get(searchPhraseidx).equals(urlDocWords.get(urlDocWordsidx))) {
+
+
+
+
+                if (searchPhraseidx == searchPhrase.size()-1) {
+
+                    if (firstOcc) {
+                        firstPosition = urlDocWordsidx - searchPhrase.size() +1;
+                        firstOcc = false;
+                    }
+                    newOcc++;
+
+                }
+
+                searchPhraseidx++;
+
+
+
+            }
+            else searchPhraseidx =0;
+
+
+
+            urlDocWordsidx++;
+
+        }
 
 
 
@@ -202,6 +212,7 @@ public class queryProcessing {
     }
     public Pair<Integer,Integer>  getEachURLPhraseInfo(LinkedList<String> searchPhrase,Map.Entry<String,DatabaseComm> urlDoc){
 
+        System.out.println("getting each url phrase");
         int posInPhrase=searchPhrase.indexOf(urlDoc.getValue().theWord);
         Document urlDocHTML=findInDB.getDocByURLCrawlerDB(urlDoc.getKey());
         List<String> urlDocWords=Arrays.asList(urlDocHTML.select("body").text().split(" "));

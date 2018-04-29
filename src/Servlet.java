@@ -99,6 +99,10 @@ public class Servlet extends HttpServlet {
             else
             {
                 searchString = request.getParameter("meanSearch");
+                low_r=0;
+                max_r=10;
+
+
             }
 
 
@@ -277,6 +281,7 @@ public class Servlet extends HttpServlet {
         Map<String,Pair<Double,Pair<Integer,Boolean>>> phrase_results = null;
         if(processingQuery.phraseFinalToRanker!=null&&processingQuery.phraseFinalToRanker.size()!=0)
         {
+            System.out.println(" phrase---- "+processingQuery.phraseFinalToRanker.size());
             re_for_phrase_search=new Relevance_Ranker(processingQuery.phraseFinalToRanker);
             phrase_results= re_for_phrase_search.get_pages_sorted_from_ranker_phrase();
 
